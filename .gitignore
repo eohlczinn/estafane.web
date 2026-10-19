@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Logs
 logs
 *.log
@@ -147,3 +148,10 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+=======
+node_modules/
+dist/
+*.log
+tests/output/
+>>>>>>> 1344037 (Estefane Web - Primeira versão)
+*.zip

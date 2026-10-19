@@ -1,0 +1,33 @@
+{
+  "name": "estefane-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"node --watch server/index.js\" \"vite --host 127.0.0.1\"",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "test": "vitest run",
+    "test:integration": "node tests/integration.js && node tests/singleMovementIntegration.js && node tests/batchIntegration.js && node tests/batchReports.js",
+    "test:dev": "node tests/devSmoke.js"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.11",
+    "@tesseract.js-data/por": "^1.0.0",
+    "express": "^5.1.0",
+    "jspdf": "^4.2.1",
+    "lucide-react": "^0.468.0",
+    "multer": "^2.0.2",
+    "pdfjs-dist": "^6.4.299",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.0",
+    "tesseract.js": "^6.0.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.2.0",
+    "vite": "^7.1.0",
+    "vitest": "^5.0.5"
+  }
+}
