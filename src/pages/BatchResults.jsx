@@ -10,7 +10,7 @@ export default function BatchResults() {
       useClosing(),
     [selected, setSelected] = useState([]),
     [saving, setSaving] = useState(false),
-    [groupingError,setGroupingError]=useState(''),
+    [groupingError, setGroupingError] = useState(""),
     navigate = useNavigate();
   if (!batch)
     return (
@@ -58,7 +58,11 @@ export default function BatchResults() {
         </div>
       </div>
       <BatchSummary summary={summary} />
-      {groupingError&&<p role="alert" className="error-message">{groupingError}</p>}
+      {groupingError && (
+        <p role="alert" className="error-message">
+          {groupingError}
+        </p>
+      )}
       {batch.warnings?.map((w) => (
         <p className="error-message" key={w}>
           {w}
@@ -83,13 +87,17 @@ export default function BatchResults() {
               <div className="batch-actions">
                 <button
                   className="secondary"
-                  onClick={() => setGroupingError(resolveGrouping(s, false)||'')}
+                  onClick={() =>
+                    setGroupingError(resolveGrouping(s, false) || "")
+                  }
                 >
                   São fechamentos independentes
                 </button>
                 <button
                   className="secondary"
-                  onClick={() => setGroupingError(resolveGrouping(s, true)||'')}
+                  onClick={() =>
+                    setGroupingError(resolveGrouping(s, true) || "")
+                  }
                 >
                   Confirmo: são do mesmo fechamento
                 </button>

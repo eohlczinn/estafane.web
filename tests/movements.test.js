@@ -83,3 +83,24 @@ it("pagamentos parciais já maiores que as vendas impedem validar", () => {
     calculate(p.fields, p.rules).warnings.some((w) => w.includes("excedem")),
   ).toBe(true);
 });
+it("dinheiro líquido sem definição de saldo não vira recebimento bruto", () => {
+  const p = parse("Dinheiro líquido: 800,00\nSangria: 200,00");
+  expect(p.fields.cash.value).toBeNull();
+  expect(p.unparsedLines).toHaveLength(1);
+});
+it("divergência entre saldo líquido e fórmula bruta completa exige explicação", () => {
+  const p = parse(
+    identity +
+      "Dinheiro: 1.000,00\nTotal de vendas: 1.000,00\nFundo: 0,00\nSangria: 200,00\nSuprimento: 0,00\nDevoluções: 0,00\nSaldo líquido em dinheiro: 700,00\nDinheiro contado: 700,00",
+  );
+  expect(reconcile(p, { reviewed: true }).status).toBe("conflict");
+  expect(
+    reconcile(p, { reviewed: true }).issues.some(
+      (i) => i.id === "net:reconciliation",
+    ),
+  ).toBe(true);
+});
+it("devoluções explicitamente em dinheiro são classificadas sem pergunta genérica", () => {
+  const p = parse("Devoluções em dinheiro: 20,00");
+  expect(p.rules.refundTreatment).toBe("cash_out");
+});

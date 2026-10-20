@@ -74,6 +74,20 @@ try {
   console.log(
     "OK: três PDFs reais, três caixas, origem e cálculo separados, revisão obrigatória.",
   );
+  const tenFiles = Array.from({ length: 10 }, (_, i) => {
+    const register = String(i + 1).padStart(2, "0");
+    return [
+      `dez-caixas-${register}.pdf`,
+      pdf([...header(register), ...amounts]),
+    ];
+  });
+  const ten = await finish((await batch(tenFiles)).id);
+  assert.equal(ten.documents.length, 10);
+  assert.equal(ten.closings.length, 10);
+  assert.ok(ten.closings.every((c) => c.calculation.expected === 105000));
+  console.log(
+    "OK: dez PDFs aceitos e processados pela fila, sem mistura entre dez fechamentos.",
+  );
   result = await finish((await batch([files[0], files[0]])).id);
   assert.equal(
     result.documents.filter((d) => d.status === "duplicate").length,

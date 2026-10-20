@@ -37,8 +37,14 @@ const faq = [
     "Meus dados são enviados para outro serviço?",
     "Não são usados serviços externos de leitura ou OCR. Os PDFs são enviados ao servidor desta instalação, que pode estar neste computador ou em uma hospedagem privada. Os arquivos temporários são descartados após a análise. Os resultados ficam na sessão do navegador e temporariamente na memória do servidor, por até 10 minutos na configuração padrão. Recarregar a página limpa a sessão financeira do navegador.",
   ],
-  ['Como os PDFs são agrupados?', 'Documentos com identidade completa e referência de fechamento ou período compatível podem ser associados. Nome da operadora sozinho não comprova a associação. Quando faltam evidências, os documentos ficam separados e você confirma se são independentes ou do mesmo fechamento. Resolva a associação antes de corrigir os valores.'],
-  ['Como funciona o consolidado?', 'Somente fechamentos confirmados entram nos totais confirmados. Faltas e sobras são mostradas separadamente. Se houver pendências ou arquivos com erro, o consolidado fica identificado como parcial e lista as exclusões. Também é possível baixar os individuais confirmados em ZIP.'],
+  [
+    "Como os PDFs são agrupados?",
+    "Documentos com identidade completa e referência de fechamento ou período compatível podem ser associados. Nome da operadora sozinho não comprova a associação. Quando faltam evidências, os documentos ficam separados e você confirma se são independentes ou do mesmo fechamento. Resolva a associação antes de corrigir os valores.",
+  ],
+  [
+    "Como funciona o consolidado?",
+    "Somente fechamentos confirmados entram nos totais confirmados. Faltas e sobras são mostradas separadamente. Se houver pendências ou arquivos com erro, o consolidado fica identificado como parcial e lista as exclusões. Também é possível baixar os individuais confirmados em ZIP.",
+  ],
 ];
 export default function Support() {
   return (

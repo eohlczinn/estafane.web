@@ -1,0 +1,32 @@
+MERCADO EXEMPLO / DOCUMENTO DE TESTE
+EXTRATO DE MOVIMENTAÇÃO DO CAIXA
+Documento fictício para testar leitura automática de PDF, somas e conferência de fechamento.
+ESTABELECIMENTO Mercado Exemplo (fictício) DATA DO MOVIMENTO 18/10/2026
+OPERADORA	Estefane	CAIXA	03
+TURNO	14:00 às 22:00	DOCUMENTO	CX03-18102026
+01 | VENDAS POR FORMA DE PAGAMENTO
+Forma de pagamento	Qtd.	Valor recebido
+Dinheiro	28	R$ 1.280,75
+PIX	52	R$ 2.340,80
+Cartão de débito	21	R$ 1.145,40
+Cartão de crédito	29	R$ 1.890,20
+Vale-alimentação	7	R$ 342,50
+TOTAL DE VENDAS LÍQUIDAS	137	R$ 6.999,65
+Resumo das vendas	Valor
+Vendas brutas	R$ 7.179,65
+Cancelamentos (2 operações)	- R$ 180,00
+Vendas líquidas (cancelamentos já descontados)	R$ 6.999,65
+02 | MOVIMENTAÇÕES DO DINHEIRO FÍSICO
+Movimentação	Tipo	Valor
+Fundo de troco inicial	Entrada	R$ 200,00
+Vendas recebidas em dinheiro	Entrada	R$ 1.280,75
+Suprimento para o caixa	Entrada	R$ 150,00
+Sangria 01 - recolhimento	Saída	R$ 400,00
+Sangria 02 - recolhimento	Saída	R$ 500,00
+03 | CONFERÊNCIA INFORMADA PELA OPERADORA
+Dinheiro contado ao fim do turno	R$ 717,25
+O valor esperado e a diferença do caixa não são fornecidos neste extrato. O sistema deve calculá-los com base nas
+movimentações acima.
+Observação: os cancelamentos já foram descontados das vendas líquidas e não devem ser subtraídos novamente dos
+valores por forma de pagamento.
+AMBIENTE DE TESTES • Valores fictícios • Não utilizar como fechamento oficial.	Página 1

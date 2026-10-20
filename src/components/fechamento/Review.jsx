@@ -157,7 +157,22 @@ export default function Review() {
       </div>
       {prefs.showCalculation && <CalculationDetails />}
       <MovementDetails />
-      {prefs.requireUnrecognized&&['pix','debit','credit','voucher','other','shift'].some(k=>fields[k].value==null)&&<details className="correction-details"><summary>Informações opcionais não reconhecidas</summary><p className="muted">{['pix','debit','credit','voucher','other','shift'].filter(k=>fields[k].value==null).map(k=>allFields[k]).join(', ')}. Não são presumidas como zero; continuam identificadas como não informadas.</p></details>}
+      {prefs.requireUnrecognized &&
+        ["pix", "debit", "credit", "voucher", "other", "shift"].some(
+          (k) => fields[k].value == null,
+        ) && (
+          <details className="correction-details">
+            <summary>Informações opcionais não reconhecidas</summary>
+            <p className="muted">
+              {["pix", "debit", "credit", "voucher", "other", "shift"]
+                .filter((k) => fields[k].value == null)
+                .map((k) => allFields[k])
+                .join(", ")}
+              . Não são presumidas como zero; continuam identificadas como não
+              informadas.
+            </p>
+          </details>
+        )}
       <details className="correction-details">
         <summary>Corrigir informação ou ver pagamentos</summary>
         <p className="muted">

@@ -8,8 +8,8 @@ export const normalize = (s) =>
     .trim();
 export const moneyRules = {
   sales:
-    /^(?:total (?:geral )?(?:de )?vendas|vendas totais|total liquido|total vendido)\b/,
-  cash: /^(?:(?:total|vendas|recebimentos)(?: em| de)?)?\s*(?:dinheiro|especie)(?:\s*\(vendas\))?\b/,
+    /^(?:total (?:geral )?(?:de )?vendas|vendas liquidas|vendas totais|total liquido|total vendido)\b/,
+  cash: /^(?:(?:total|vendas(?: recebidas)?|recebimentos)(?: em| de)?)?\s*(?:dinheiro|especie)(?:\s*\(vendas\))?\b/,
   pix: /^(?:(?:total|vendas)(?: em| de)?)?\s*pix\b/,
   debit:
     /^(?:(?:total|vendas)(?: em| de)?\s+)?(?:(?:cartao|cartoes) (?:de )?)?debito\b/,
@@ -39,7 +39,7 @@ export const infoRules = Object.fromEntries(
     operator:
       "(?:nome (?:do operador|da operadora)|operador[a]?|funcionario[a]?)",
     register: "(?:numero do caixa|pdv|caixa)",
-    date: "(?:data(?: de fechamento)?|fechamento)",
+    date: "(?:data(?: de fechamento| do movimento)?|fechamento)",
     shift: "(?:horario|turno|hora)",
   }).map(([key, label]) => [key, new RegExp(`^${label}${separator}(.+)$`)]),
 );

@@ -3916,3 +3916,4 @@ textarea {
     break-after: avoid;
   }
 }
+.result-chip.consolidated{background:var(--soft);color:var(--accent)}

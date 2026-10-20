@@ -2,6 +2,7 @@ import { emptyFields, allFields } from "../../shared/fields.js";
 import { parseMoney } from "../../shared/money.js";
 import { movementTotals, movementTypes } from "../../shared/movements.js";
 import { normalize, moneyRules, infoRules, layoutLine } from "./parserRules.js";
+import { reconcileLedgerProfile } from "./ledgerProfile.js";
 import {
   extractMovements,
   moneyTokens,
@@ -59,6 +60,7 @@ export function parsePages(pages, { documentId = "document" } = {}) {
     } else fields[key] = candidate;
   }
   const identity = { closingReference: null, reportType: null };
+  const explicitMarket = lines.some((l) => /^estabelecimento\s/.test(normalize(l.text)));
   for (const line of lines) {
     const original = line.text,
       clean = layoutLine(original),
@@ -83,13 +85,18 @@ export function parsePages(pages, { documentId = "document" } = {}) {
       continue;
     }
     if (extracted.consumed.has(line.id) || !clean) continue;
-    const header = clean.split(
-      /\s+(?=(?:Caixa|PDV|Data|Turno|Hor[aá]rio|Operadora?|Estabelecimento)\s*[:=])/i,
-    );
+    // Metadata columns may be separated by coordinates/tabs without colons.
+    const header = Object.values(infoRules).some((rule) => rule.test(n)) ? clean.split(
+      /\s+(?=(?:Caixa|PDV|Data(?: do movimento| de fechamento)?|Turno|Hor[aá]rio|Operadora?|Estabelecimento|Documento)(?:\s*[:=]\s*|\s+)\S)/i,
+    ) : [clean];
     let info = false;
     for (const cell of header) {
       const normalized = normalize(cell);
       for (const [key, rule] of Object.entries(infoRules)) {
+        // Ignore an unlabelled market banner when a labelled establishment
+        // exists; retain conflicting explicit metadata for the audit.
+        if (key === "market" && explicitMarket &&
+          /^(?:mercado|supermercado)\s+[^:=]*\//.test(normalized)) continue;
         const match = normalized.match(rule);
         if (!match) continue;
         const prefix = normalized.slice(0, normalized.length - match[1].length);
@@ -137,6 +144,10 @@ export function parsePages(pages, { documentId = "document" } = {}) {
       if (
         !rule.test(n) ||
         (key === "cash" && /contado/.test(n)) ||
+        (key === "cash" &&
+          /liquid|disponivel|restante|apos.*(?:sangri|retirad|movimenta)/.test(
+            n,
+          )) ||
         (key === "cards" && /debito|credito/.test(n))
       )
         continue;
@@ -222,12 +233,20 @@ export function parsePages(pages, { documentId = "document" } = {}) {
       normalize(pages.map((p) => p.text).join("\n")),
     ),
   };
+  reconcileLedgerProfile({ lines, fields, declarations, unparsedLines, rules,
+    notes: extracted.issues, assign, documentId });
+  // Profile-recognized lines no longer need a generic extraction warning.
+  const unknownSources = new Set(unparsedLines.map((l) => `${l.source.page}:${l.source.line}`));
+  const retainedWarnings = warnings.filter((w) => {
+    const match = w.match(/^Linha financeira não interpretada: página (\d+), linha (\d+)\./);
+    return !match || unknownSources.has(`${match[1]}:${match[2]}`);
+  });
   return {
     fields,
     movements: extracted.movements,
     declarations,
     unparsedLines,
-    warnings,
+    warnings: retainedWarnings,
     normalizationNotes: extracted.issues,
     rules,
     identity,

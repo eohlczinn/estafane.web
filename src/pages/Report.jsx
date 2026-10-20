@@ -262,13 +262,15 @@ export default function Report({ printPage = false }) {
         </div>
       )}
       <div className="report-toolbar panel">
-        <span className={`result-chip ${calc.result}`}>
+        <span className={`result-chip ${scope==='individual'?calc.result:partial?'pending':'consolidated'}`}>
           {scope === "consolidated"
             ? partial
               ? "CONSOLIDADO PARCIAL"
               : "CONSOLIDADO VALIDADO"
             : !confirmed
               ? "CONFERÊNCIA PENDENTE"
+              : scope==='selected'
+                ? `${models.length} FECHAMENTOS CONFIRMADOS`
               : statusLabels[calc.result]}
         </span>
         <button className="secondary" onClick={() => setModal(true)}>

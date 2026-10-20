@@ -36,7 +36,7 @@ export function classifyEffect(text) {
     return "included";
   if (/pix|credito|debito|cartao|vale[- ]/.test(n)) return "non_cash";
   if (
-    /(?:saida|devolucao|pago|pagamento) (?:fisica |em )?(?:dinheiro|especie)|nao (?:incluid|descontad)/.test(
+    /(?:saida|devolucao|devolucoes|pago|pagamento) (?:fisica |em )?(?:dinheiro|especie)|nao (?:incluid|descontad)/.test(
       n,
     )
   )

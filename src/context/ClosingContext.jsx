@@ -84,22 +84,42 @@ export function ClosingProvider({ children }) {
   }, [prefs]);
   useEffect(() => {
     function refresh() {
-      const apply = old => {
-        if(old.confirmed) return old;
-        const fields=applyWorkDefaults(old.fields,prefs.market,new Date(),prefs);
-        for(const [key,value] of Object.entries({date:todayInSaoPaulo(),market:prefs.market,operator:prefs.operator,register:prefs.register}))
-          if(fields[key].status==='default') fields[key]={...fields[key],value:value||null};
-        const changed=Object.keys(fields).some(key=>fields[key].value!==old.fields[key].value||fields[key].status!==old.fields[key].status);
-        return changed?audited({...old,fields,reviewed:false}):old;
+      const apply = (old) => {
+        if (old.confirmed) return old;
+        const fields = applyWorkDefaults(
+          old.fields,
+          prefs.market,
+          new Date(),
+          prefs,
+        );
+        for (const [key, value] of Object.entries({
+          date: todayInSaoPaulo(),
+          market: prefs.market,
+          operator: prefs.operator,
+          register: prefs.register,
+        }))
+          if (fields[key].status === "default")
+            fields[key] = { ...fields[key], value: value || null };
+        const changed = Object.keys(fields).some(
+          (key) =>
+            fields[key].value !== old.fields[key].value ||
+            fields[key].status !== old.fields[key].status,
+        );
+        return changed ? audited({ ...old, fields, reviewed: false }) : old;
       };
       setManual(apply);
-      setBatch(old=>old?{...old,closings:old.closings.map(apply)}:old);
+      setBatch((old) =>
+        old ? { ...old, closings: old.closings.map(apply) } : old,
+      );
     }
     refresh();
-    const timer=setInterval(refresh,60000);
-    document.addEventListener('visibilitychange',refresh);
-    return ()=>{clearInterval(timer);document.removeEventListener('visibilitychange',refresh);};
-  },[prefs.market,prefs.operator,prefs.register]);
+    const timer = setInterval(refresh, 60000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [prefs.market, prefs.operator, prefs.register]);
   useEffect(() => {
     let stopped = false;
     async function check() {
@@ -223,8 +243,11 @@ export function ClosingProvider({ children }) {
           }),
         ),
       });
-      if (combine && suggestion.closingIds.includes(activeId))
-        setActiveId(suggestion.closingIds[0]);
+      if (combine && suggestion.closingIds.includes(activeId)) {
+        const previous=batch.closings.find(c=>c.id===activeId);
+        const replacement=next.closings.find(c=>c.documentIds.some(id=>previous.documentIds.includes(id)));
+        setActiveId(replacement?.id||next.closings[0]?.id||null);
+      }
     } catch (error) {
       setNotice(error.message);
       return error.message;
@@ -287,4 +310,3 @@ export function ClosingProvider({ children }) {
   );
 }
 export const useClosing = () => useContext(Context);
-

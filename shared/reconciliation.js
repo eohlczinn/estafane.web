@@ -24,6 +24,20 @@ export function reconcile(
     });
   for (const [i, message] of calculation.warnings.entries())
     add(`calculation:${i}`, message, { kind: "conflict" });
+  if (rules.cashBasis === "net") {
+    const gross = calculate(fields, { ...rules, cashBasis: "gross" });
+    if (
+      gross.expected != null &&
+      gross.expected !== calculation.expected &&
+      !gross.warnings.some((w) => w.startsWith("Esclareça")) &&
+      !resolutions["net:reconciliation"]?.reason?.trim()
+    )
+      add(
+        "net:reconciliation",
+        `O saldo líquido declarado (${calculation.expected} centavos) diverge da fórmula bruta completa (${gross.expected} centavos). Corrija os campos ou esclareça a movimentação adicional que explica essa diferença.`,
+        { kind: "conflict", resolvable: true, field: "netCash" },
+      );
+  }
   for (const key of ["market", "operator", "register", "date"])
     if (!fields[key]?.value?.trim() || fields[key]?.status === "ambiguous")
       add(`identity:${key}`, `Confira ${allFields[key]}.`, {
