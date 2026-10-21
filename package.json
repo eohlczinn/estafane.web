@@ -9,7 +9,8 @@
     "start": "node server/index.js",
     "test": "vitest run",
     "test:integration": "node tests/integration.js && node tests/singleMovementIntegration.js && node tests/batchIntegration.js && node tests/batchReports.js",
-    "test:dev": "node tests/devSmoke.js"
+    "test:dev": "node tests/devSmoke.js",
+    "hash-password": "node server/scripts/hashPassword.js"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.11",

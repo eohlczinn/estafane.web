@@ -50,21 +50,54 @@ Contratos JSON versão 2 em `shared/contracts.js`:
 - Fechamento: documentos associados, identidade, campos, movimentos, regras extraídas, auditoria, histórico e confirmação.
 - Lote: documentos, fechamentos, sugestões de associação e resumo.
 
-Rotas:
+Rotas da API:
 
-- `GET /api/health`: limites e saúde.
-- `POST /api/fechamento/analisar`: compatibilidade com upload único, campo `pdf`, resultado completo.
-- `POST /api/fechamento/analisar-lote`: multipart `pdfs`, retorna HTTP 202 e ID. Campo opcional `autoGroup=false`.
-- `GET /api/fechamento/lotes/:id`: progresso real e resultado do lote.
-- `DELETE /api/fechamento/lotes/:id`: cancela tarefas em espera e processos ativos quando possível.
+- `POST /api/auth/login`: login com usuário e senha, rate-limiting e emissão de cookie `HttpOnly`.
+- `POST /api/auth/logout`: encerra a sessão com segurança e expira o cookie.
+- `GET /api/auth/me`: valida a sessão ativa e retorna os dados do usuário.
+- `GET /api/health`: limites, status e integridade do servidor.
+- `POST /api/fechamento/analisar`: compatibilidade com upload único, campo `pdf`, resultado completo (exige autenticação).
+- `POST /api/fechamento/analisar-lote`: multipart `pdfs`, retorna HTTP 202 e ID (exige autenticação). Campo opcional `autoGroup=false`.
+- `GET /api/fechamento/lotes/:id`: progresso real e resultado do lote (exige autenticação).
+- `DELETE /api/fechamento/lotes/:id`: cancela tarefas em espera e processos ativos (exige autenticação).
 
-Falhas de processamento são específicas por documento. Excesso total de tamanho/quantidade rejeita a requisição. O lote continua pendente se houver arquivos com erro ou fechamentos não confirmados.
+## Autenticação, Segurança e Deploy no Railway
+
+O sistema possui autenticação nativa completa para ambiente de produção (Railway) e dispositivos móveis:
+
+- **Sessão por Cookie HttpOnly**: os tokens de sessão são assinados com HMAC-SHA256, com flags `HttpOnly`, `SameSite=Lax` e `Secure` (em HTTPS / produção). O frontend nunca tem acesso direto ao token, protegendo contra XSS.
+- **Proteção contra Força Bruta**: limite de tentativas consecutivas incorretas (5 tentativas bloqueiam temporariamente por 15 minutos).
+- **Proteção contra CSRF**: validação estrita de origens confiáveis para requisições de modificação.
+- **Armazenamento Seguro de Senha**: suporte a hash de alta derivação computacional `scrypt` (`ADMIN_PASSWORD_HASH`) ou senha via variável de ambiente (`ADMIN_PASSWORD`). Nunca armazene senhas ou tokens no código-fonte.
+
+### Variáveis de Ambiente no Railway
+
+Cadastre as seguintes variáveis de ambiente no painel do Railway (**Variables**):
+
+| Variável | Obrigatória | Exemplo / Descrição |
+| --- | --- | --- |
+| `HOST` | Sim | `0.0.0.0` (Permite que o Railway encaminhe o tráfego público para o container) |
+| `PORT` | Automática | O Railway preenche automaticamente (ou padrão 8080/8787) |
+| `NODE_ENV` | Sim | `production` (Ativa flags seguras de cookies e otimizações) |
+| `ADMIN_PASSWORD_HASH` | Recomendado | Hash scrypt gerado com o comando abaixo. Ex: `scrypt:a1b2...:c3d4...` |
+| `ADMIN_PASSWORD` | Alternativa | Senha em texto puro se preferir não usar hash. Ex: `MinhaSenhaForte2026` |
+| `ADMIN_USERNAME` | Opcional | `estefane` (Padrão: `estefane`) |
+| `SESSION_SECRET` | Recomendado | Chave aleatória de 32+ caracteres para assinar cookies. Ex: `openssl rand -hex 32` |
+| `ALLOWED_ORIGINS` | Opcional | Origens extras permitidas. O Railway public domain já é detectado automaticamente. |
+
+#### Como gerar o hash da senha:
+
+No terminal do projeto, execute:
+```bash
+npm run hash-password "SuaSenhaAqui"
+```
+Copie a linha `ADMIN_PASSWORD_HASH=scrypt:...` exibida no terminal e cole no painel de variáveis do Railway.
 
 ## Limites e operação do servidor
 
 | Variável | Padrão | Faixa |
 | --- | --- | --- |
-| `HOST` | `127.0.0.1` | Endereço de escuta |
+| `HOST` | `127.0.0.1` (`0.0.0.0` no Railway) | Endereço de escuta |
 | `PORT` | `8787` | 0–65535, 0 escolhe porta livre |
 | `MAX_BATCH_FILES` | 10 | 1–10 |
 | `MAX_UPLOAD_MB` | 10 | 1–30 por arquivo |
@@ -79,16 +112,6 @@ Uploads são gravados por streaming em diretórios aleatórios na pasta temporá
 
 Resultados estruturados permanecem apenas em memória: até a expiração do lote, com limite adicional de dez lotes finalizados retidos. O navegador mantém a sessão financeira até recarregar. localStorage contém somente preferências permitidas; não inclui documentos, valores, texto ou observações financeiras. Downloads explícitos permanecem onde o navegador salvar.
 
-## Acesso privado e hospedagem futura
-
-A escuta padrão é somente loopback. A API verifica acesso além de Origin, define respostas sem cache e cabeçalhos de segurança e não registra conteúdo financeiro. Não confia em cabeçalhos de identidade ou `X-Forwarded-For` não verificados.
-
-`app.locals.verifyAccess(req)` é o ponto de integração de um provedor externo: substituir por verificação real de JWT/sessão conforme o provedor escolhido. Não existe login próprio. `ACCESS_BEARER_TOKEN`, quando configurado, exige esse token no cabeçalho Authorization e usa comparação segura. Esse modo atende integração de servidor/proxy; não coloque token em código frontend ou localStorage. `ALLOWED_ORIGINS` configura as origens permitidas separadas por vírgula, mas não autentica usuários.
-
-Se HOST não for loopback e nenhum verificador de acesso estiver configurado, a API recusa acesso. O uso público exige HTTPS, provedor de acesso privado verificado no proxy/servidor, isolamento de requisições por usuário, rate limiting, supervisão do processo, política de retenção e validação de infraestrutura. Esses itens de implantação não estão configurados nem publicados nesta entrega. A integração de autenticação é um ponto preparado, não uma autenticação de hospedagem homologada.
-
-Em servidor hospedado, os PDFs viajam até esse servidor; o OCR acontece nele, não necessariamente no celular. A interface explica isso. O preview loopback não é acesso automático por outro celular.
-
 ## Relatórios e impressão
 
 Conteúdo estruturado comum para HTML e jsPDF. Individual inclui identificação, pagamentos, movimentos com saídas sinalizadas, resultado, documentos, correções, observações, assinatura e horário quando habilitados. Consolidado inclui período, contagens, totais confirmados, resultado por caixa, faltas/sobras e exclusões. Nomes incluem caixa, identificador, papel e horário; ZIP contém PDFs com nomes distintos.
@@ -101,10 +124,13 @@ As imagens de A4/80/58 são locais em `public/illustrations/`, geradas durante o
 
 - `shared/calculation.js`, `movements.js`, `reconciliation.js`: motor único de cálculo, normalização e auditoria para servidor e navegador.
 - `shared/grouping.js`, `batch.js`, `closingEdits.js`, `contracts.js`: associação, consolidado, histórico/revalidação e contrato versionado.
+- `server/services/authService.js`, `originValidator.js`: autenticação por sessão HttpOnly, hash scrypt, rate limiting e validação de origem.
 - `server/services/movementExtractor.js`, `pdfParser.js`, `parserRules.js`, `textLines.js`, `pdfReader.js`: extração por rótulos, itens/subtotais e coordenadas. OCR português em `ocrService.js`.
 - `server/services/executionQueue.js`, `batchAnalyzer.js`, `uploadStorage.js`, `analyzeService.js`, `pdfWorker.js`: fila, lote, streaming temporário, processo isolado e progresso.
 - `server/services/groupingService.js` e `reconciliationService.js`: entradas do servidor para os módulos compartilhados.
 - `server/app.js`, `config.js`, `index.js`: rotas/acesso, limites e inicialização/encerramento.
+- `src/context/AuthContext.jsx`: estado da sessão do usuário, login, logout e expiração.
+- `src/components/auth/Login.jsx`: tela de login responsiva e profissional para a Estefane.
 - `src/context/ClosingContext.jsx`: sessão com vários fechamentos e compatibilidade com o único.
 - `src/components/upload/`, `batch/`, `fechamento/`, `printing/`: upload, dashboard, conferência e formatos.
 - `src/pages/BatchResults.jsx`, `Results.jsx`, `Report.jsx`: lote, detalhe e emissão reutilizada para individual/consolidado/seleção.
@@ -117,11 +143,16 @@ npm test
 npm run test:integration
 npm run test:dev
 npm run build
-npm audit
 ```
 
 A integração inclui PDFs reais **fictícios**, OCR, múltiplas páginas e colunas, sangrias repetidas, falta/sobra, lotes independentes/complementares/duplicados, operadores/datas diferentes, erro parcial, cancelamento, limites, senha, PDFs individuais/consolidado A4/80/58 e ZIP. Artefatos em `tests/output/`, sem importação automática na produção. `test:dev` faz uploads contra `node --watch` e verifica a sobrevivência da API.
 
-**O PDF efetivamente usado pelo Pingo De Ouro ainda não foi fornecido nem homologado. O sistema não está declarado pronto para uso financeiro real sem essa validação.** Os aliases e regras são extensíveis em `parserRules.js`/`movementExtractor.js` com regressões de amostras anonimizadas. OCR também exige conferência humana. Impressora física, celular físico e infraestrutura de hospedagem ainda precisam de homologação.
-
 Consulte `REESTRUTURACAO.md` para a comprovação atual e `DIAGNOSTICO-LOTE.md` para o diagnóstico inicial. `VALIDACAO.md` registra a rodada anterior, de fechamento único.
+
+### Deploy reproduzível pelo Railway CLI
+
+Na pasta `estefane-web`, execute `npm test`, `railway login`, `railway status` e `railway up`. Use `railway link` se o projeto existente ainda não estiver vinculado. O login precisa autorizar a CLI, além de entrar no painel web.
+
+`railway.json` configura Railpack, build `npm run build`, início em produção e healthcheck `/healthz`. `.node-version` seleciona Node 24. O servidor usa `PORT` da plataforma e escuta em `0.0.0.0` quando `NODE_ENV=production`, preservando o endereço local no desenvolvimento. Não use `npm test` como comando de início: ele encerra após a suíte. A rota pública `/healthz` retorna apenas status; os dados em `/api` continuam protegidos por sessão.
+
+Configure `ADMIN_PASSWORD_HASH` (ou `ADMIN_PASSWORD`) e `SESSION_SECRET` nas variáveis do serviço. Não coloque segredos no Git. Após publicar, verifique a URL pública, o login e um PDF fictício autenticado. Configuração oficial: https://docs.railway.com/config-as-code

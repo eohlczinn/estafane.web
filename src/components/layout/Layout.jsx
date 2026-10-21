@@ -20,8 +20,11 @@ import {
   ShieldCheck,
   ArrowUpRight,
   Sparkles,
+  LogOut,
 } from "lucide-react";
 import { useClosing } from "../../context/ClosingContext.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
+
 const links = [
   ["/", "Início", House],
   ["/ler-pdf", "Ler PDF", FileText],
@@ -31,14 +34,17 @@ const links = [
   ["/configuracoes", "Configurações", Settings],
   ["/suporte", "Suporte", Headphones],
 ];
+
 export default function Layout({ children }) {
   const location = useLocation();
   const { prefs, setPrefs, notice, busy, confirmed, backend, filename } =
       useClosing(),
+    { logout, user } = useAuth(),
     [menu, setMenu] = useState(false),
     [profile, setProfile] = useState(false),
     [notifications, setNotifications] = useState(false);
   const navigate = useNavigate();
+
   return (
     <div className="app-shell">
       <aside className={`sidebar ${menu ? "open" : ""}`}>
@@ -90,8 +96,19 @@ export default function Layout({ children }) {
           </div>
         </div>
         <div className="local-tag">
-          <ShieldCheck size={15} /> Sem envio para serviços externos
+          <ShieldCheck size={15} /> Sessão autenticada e protegida
         </div>
+        <button
+          className="sidebar-logout-btn"
+          onClick={() => {
+            setMenu(false);
+            logout();
+          }}
+          title="Encerrar sessão"
+        >
+          <LogOut size={16} />
+          <span>Sair da conta</span>
+        </button>
       </aside>
       {menu && <div className="scrim" onClick={() => setMenu(false)} />}
       <div className="workspace">
@@ -184,7 +201,7 @@ export default function Layout({ children }) {
                 aria-expanded={profile}
               >
                 <img src="/estefane.jpg" alt="Estefane" />
-                <strong>Estefane</strong>
+                <strong>{user?.name || "Estefane"}</strong>
                 <ChevronDown size={17} />
               </button>
               {profile && (
@@ -192,7 +209,7 @@ export default function Layout({ children }) {
                   <div className="profile-summary">
                     <img src="/estefane.jpg" alt="Estefane" />
                     <div>
-                      <h3>Estefane</h3>
+                      <h3>{user?.name || "Estefane"}</h3>
                       <p>22 anos</p>
                       <span>
                         <MapPin size={13} /> Águas Lindas de Goiás
@@ -233,6 +250,19 @@ export default function Layout({ children }) {
                       </span>
                     </button>
                   ))}
+                  <button
+                    className="logout-pop-btn"
+                    onClick={() => {
+                      setProfile(false);
+                      logout();
+                    }}
+                  >
+                    <LogOut size={18} />
+                    <span>
+                      <strong>Sair da conta</strong>
+                      <small>Encerrar sessão no servidor</small>
+                    </span>
+                  </button>
                 </div>
               )}
             </div>

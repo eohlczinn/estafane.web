@@ -126,9 +126,13 @@ export function ClosingProvider({ children }) {
       try {
         const response = await fetch("/api/health", {
             signal: AbortSignal.timeout(5000),
+            credentials: "include",
           }),
           data = await response.json();
         if (!stopped) {
+          if (response.status === 401 && typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("auth:expired"));
+          }
           setBackend(
             response.ok && data.status === "ok" ? "online" : "offline",
           );
