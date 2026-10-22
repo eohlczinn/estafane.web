@@ -29,7 +29,7 @@ export default function FileStatus({ document }) {
       ) : (
         <CheckCircle2 size={15} />
       )}{" "}
-      {fileStatusLabels[document.status] || "Aguardando"}
+      {document.status === "error" ? document.failureKind === "unsupported" ? "Não suportado" : document.failureKind === "limit" ? "Acima do limite" : document.failureKind === "invalid" ? "Arquivo inválido" : "Erro de processamento" : fileStatusLabels[document.status] || "Aguardando"}
       {document.pageCount
         ? ` · pág. ${document.page}/${document.pageCount}`
         : ""}

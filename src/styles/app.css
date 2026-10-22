@@ -4281,6 +4281,19 @@ textarea {
   justify-content: center;
 }
 
+.audit-resolution { min-width: 0; overflow-wrap: anywhere; }
+.audit-resolution summary { cursor: pointer; font-weight: 600; }
+.audit-resolution label { display: grid; gap: 6px; margin: 12px 0; }
+.audit-resolution select, .audit-resolution input { width: 100%; min-width: 0; }
+.audit-resolution select { padding: 12px; background: var(--input); color: var(--text); border: 1px solid var(--line); border-radius: 9px; }
+.summary-breakdown { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px 0; }
+.summary-breakdown dd { margin: 0; }
+@media (max-width: 640px) {
+  .audit-resolution { padding: 12px; }
+  .audit-resolution button { width: 100%; white-space: normal; }
+  .closing-export-actions { flex-wrap: wrap; }
+}
+
 .profile-logout-btn {
   display: inline-flex;
   align-items: center;

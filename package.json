@@ -1,14 +1,14 @@
 {
   "name": "estefane-web",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "concurrently -k \"node --env-file-if-exists=.env.railway --watch server/index.js\" \"vite --host 127.0.0.1\"",
     "build": "vite build",
     "start": "node --env-file-if-exists=.env.railway server/index.js",
-    "test": "vitest run",
-    "test:integration": "node tests/integration.js && node tests/singleMovementIntegration.js && node tests/batchIntegration.js && node tests/batchReports.js",
+    "test": "vitest run --maxWorkers=2",
+    "test:integration": "node tests/integration.js && node tests/singleMovementIntegration.js && node tests/batchIntegration.js && node tests/documentIntegration.js && node tests/batchReports.js",
     "test:dev": "node tests/devSmoke.js",
     "hash-password": "node server/scripts/hashPassword.js"
   },
@@ -23,7 +23,9 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.0",
-    "tesseract.js": "^6.0.1"
+    "tesseract.js": "^6.0.1",
+    "xlsx": "file:vendor/xlsx-0.20.3.tgz",
+    "yauzl": "^3.4.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.0",

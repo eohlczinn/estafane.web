@@ -1,19 +1,44 @@
 import { emptyFields, allFields } from "../../shared/fields.js";
 import { parseMoney } from "../../shared/money.js";
-import { movementTotals, movementTypes } from "../../shared/movements.js";
+import { movementTotals, movementTypes, sumCents } from "../../shared/movements.js";
 import { normalize, moneyRules, infoRules, layoutLine } from "./parserRules.js";
 import { reconcileLedgerProfile } from "./ledgerProfile.js";
+import { interpretTables } from "./tableInterpreter.js";
+import { createHash } from "node:crypto";
+import { validateImportProfiles } from "../../shared/importProfiles.js";
 import {
   extractMovements,
   moneyTokens,
   classifyEffect,
 } from "./movementExtractor.js";
 
-export function parsePages(pages, { documentId = "document" } = {}) {
+export function parsePages(
+  inputPages,
+  { documentId = "document", importProfiles = [] } = {},
+) {
+  const pages = interpretTables(inputPages);
+  const layoutKey = createHash("sha256")
+    .update(
+      JSON.stringify(
+        pages.map((p) => ({
+          sheet: p.sheet || null,
+          labels: p.lines
+            .map((l) =>
+              normalize(l.text).replace(/(?:r\$\s*)?-?\d[\d.,/]*/g, "#"),
+            )
+            .filter(Boolean),
+        })),
+      ),
+    )
+    .digest("hex");
+  const profile = validateImportProfiles(importProfiles).find(
+    (p) => p.layoutKey === layoutKey,
+  );
   const fields = emptyFields(),
     warnings = [],
     declarations = [],
-    unparsedLines = [];
+    unparsedLines = [],
+    extractionIssues = [], voucherParts = new Map();
   const lines = pages.flatMap((p) =>
     (
       p.lines || p.text.split(/\r?\n/).map((text, i) => ({ text, line: i + 1 }))
@@ -23,7 +48,10 @@ export function parsePages(pages, { documentId = "document" } = {}) {
         ...l,
         text: text.trim(),
         page: p.page,
-        id: `${p.page}:${l.line}:${cell}`,
+        sheet: p.sheet,
+        ocr: p.ocr,
+        confidence: p.confidence,
+        id: `${p.page}:${l.line}:${l.column || 0}:${cell}`,
       }));
     }),
   );
@@ -36,6 +64,8 @@ export function parsePages(pages, { documentId = "document" } = {}) {
       source,
       status: "recognized",
       review: true,
+      confidence: source.confidence ?? 0.95,
+      category: key,
     };
     if (fields[key].status === "ambiguous") {
       fields[key].candidates.push(candidate);
@@ -60,7 +90,24 @@ export function parsePages(pages, { documentId = "document" } = {}) {
     } else fields[key] = candidate;
   }
   const identity = { closingReference: null, reportType: null };
-  const explicitMarket = lines.some((l) => /^estabelecimento\s/.test(normalize(l.text)));
+  const reportTitles = [
+    [/^(?:relacao de )?vendas (?:agrupadas )?por dia\b/,"Vendas por dia"],
+    [/^(?:extrato de movimentacao|movimento diario|movimentacoes) (?:do |de )?caixa\b/,"Movimentação física de caixa"],
+    [/^fechamento (?:de |do )?operador/,"Fechamento de operador"],
+    [/^resumo (?:de |das )?vendas\b/,"Resumo de vendas"],
+    [/^extrato (?:de |dos )?pagamentos\b/,"Extrato de pagamentos"],
+    [/^(?:relatorio (?:de |das )?)?sangrias$/, "Relatório de sangrias"],
+    [/^(?:relatorio (?:de |dos )?)?suprimentos$/, "Relatório de suprimentos"],
+    [/^relatorio (?:de |dos )?cancelamentos$/, "Relatório de cancelamentos"],
+    [/^relatorio (?:de |das )?(?:devolucoes|estornos)$/, "Devoluções e estornos"],
+  ];
+  for (const line of lines) {
+    const found = reportTitles.find(([pattern]) => pattern.test(normalize(line.text)));
+    if (found) { identity.reportType = found[1]; break; }
+  }
+  const explicitMarket = lines.some((l) =>
+    /^estabelecimento\s/.test(normalize(l.text)),
+  );
   for (const line of lines) {
     const original = line.text,
       clean = layoutLine(original),
@@ -72,7 +119,26 @@ export function parsePages(pages, { documentId = "document" } = {}) {
       text: original,
       bounds: line.bounds || null,
       profile: clean === original ? "rotulos" : "tabela-numerada",
+      sheet: line.sheet,
+      cell:
+        line.cells
+          ?.filter((c) => c.text || c.unsafe)
+          .map((c) => c.cell)
+          .join(", ") || null,
+      original: line.originalText || original,
+      hidden: !!line.hidden,
+      confidence: line.ocr ? (line.confidence ?? 0.5) : 0.95,
+      layoutKey,
     };
+    const unsafe = line.cells?.filter((c) => c.unsafe) || [];
+    if (unsafe.length)
+      extractionIssues.push({
+        id: `${documentId}:${line.id}:cell-review`,
+        message: unsafe.map((c) => `${c.cell}: ${c.unsafe}`).join("; "),
+        source,
+        kind: "review",
+        resolvable: true,
+      });
     const reference = clean.match(
       /^(?:ID do fechamento|Fechamento (?:ID|n[ºo.]|numero)|Identificador do fechamento)\s*[:=#]?\s*([\w-]+)/i,
     );
@@ -86,17 +152,23 @@ export function parsePages(pages, { documentId = "document" } = {}) {
     }
     if (extracted.consumed.has(line.id) || !clean) continue;
     // Metadata columns may be separated by coordinates/tabs without colons.
-    const header = Object.values(infoRules).some((rule) => rule.test(n)) ? clean.split(
-      /\s+(?=(?:Caixa|PDV|Data(?: do movimento| de fechamento)?|Turno|Hor[aá]rio|Operadora?|Estabelecimento|Documento)(?:\s*[:=]\s*|\s+)\S)/i,
-    ) : [clean];
+    const header = Object.values(infoRules).some((rule) => rule.test(n))
+      ? clean.split(
+          /\s+(?=(?:Caixa|PDV|Data(?: do movimento| de fechamento)?|Turno|Hor[aá]rio|Operadora?|Estabelecimento|Documento)(?:\s*[:=]\s*|\s+)\S)/i,
+        )
+      : [clean];
     let info = false;
     for (const cell of header) {
       const normalized = normalize(cell);
       for (const [key, rule] of Object.entries(infoRules)) {
         // Ignore an unlabelled market banner when a labelled establishment
         // exists; retain conflicting explicit metadata for the audit.
-        if (key === "market" && explicitMarket &&
-          /^(?:mercado|supermercado)\s+[^:=]*\//.test(normalized)) continue;
+        if (
+          key === "market" &&
+          explicitMarket &&
+          /^(?:mercado|supermercado)\s+[^:=]*\//.test(normalized)
+        )
+          continue;
         const match = normalized.match(rule);
         if (!match) continue;
         const prefix = normalized.slice(0, normalized.length - match[1].length);
@@ -164,6 +236,13 @@ export function parsePages(pages, { documentId = "document" } = {}) {
           amounts = [{ value: parseMoney(tail) }];
       }
       if (amounts.length === 1) {
+        const subtype = key === "voucher" && !/alimentacao.*refeicao|refeicao.*alimentacao/.test(n)
+          ? /vale[- ]?alimentacao|ticket alimentacao/.test(n) ? "alimentacao" : /vale[- ]?refeicao/.test(n) ? "refeicao" : null : null;
+        if (subtype) {
+          const items = voucherParts.get(subtype) || [];
+          items.push({value:amounts[0].value,source,original});voucherParts.set(subtype,items);
+          recognized = true; break;
+        }
         assign(key, amounts[0].value, source);
         declarations.push({
           field: key,
@@ -176,15 +255,62 @@ export function parsePages(pages, { documentId = "document" } = {}) {
       }
       break;
     }
-    if (!recognized && /(?:R\$|\d,\d{2}\b)/.test(clean)) {
+    const informational =
+      /^(?:pagina\s+\d|pag\.?\s*\d|emitido (?:em|por)|impress[ao]o (?:em|por)|cnpj\s*[:=]|cpf\s*[:=]|telefone\s*[:=]|versao do sistema\s*[:=])/.test(
+        n,
+      ) || /^[-_=*\s]+$/.test(clean);
+    if (!recognized && !informational && /(?:R\$|\d,\d{2}\b)/.test(clean)) {
+      const tokens = moneyTokens(clean);
+      const label = normalize(
+        clean
+          .replace(
+            /(?:-\s*)?(?:R\$\s*)?(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}-?/g,
+            "",
+          )
+          .replace(/[:=|\s]+$/, ""),
+      );
+      const saved = profile?.rules.find((r) => r.label === label);
+      if (saved && tokens.length === 1) {
+        assign(saved.field, tokens[0].value, {
+          ...source,
+          profile: "perfil-confirmado-v1",
+        });
+        extractionIssues.push({
+          id: `${documentId}:${line.id}:profile-review`,
+          message: `Confira a classificação sugerida pelo perfil: ${allFields[saved.field]}.`,
+          source,
+          kind: "review",
+          resolvable: true,
+        });
+        continue;
+      }
       unparsedLines.push({
         id: `${documentId}:${line.id}:unknown`,
         source,
         text: original,
+        value: tokens.length === 1 ? tokens[0].value : null,
+        label,
+        layoutKey,
+        suggestions: [],
+        reason:
+          tokens.length !== 1
+            ? "Há vários valores ou um valor incompleto sem coluna financeira identificada."
+            : "O contexto não comprova a categoria financeira deste valor.",
       });
       warnings.push(
         `Linha financeira não interpretada: página ${line.page}, linha ${line.line}.`,
       );
+    }
+  }
+  if (voucherParts.size) {
+    const parts = [...voucherParts.values()];
+    if (parts.some(items => new Set(items.map(i => i.value)).size > 1)) {
+      for (const item of parts.flat()) assign("voucher",item.value,item.source,item.original);
+    } else {
+      const items = parts.map(p => p[0]), total = sumCents(items.map(i => i.value));
+      assign("voucher",total,{...items[0].source,profile:items.length > 1 ? "vales-por-modalidade" : items[0].source.profile},items.map(i => i.original).join(" | "));
+      fields.voucher.breakdown = [...voucherParts].map(([kind,items]) => ({kind,value:items[0].value,sources:items.map(i => i.source)}));
+      declarations.push({field:"voucher",value:total,source:items[0].source,role:"declared_total"});
     }
   }
   const totals = movementTotals(extracted.movements);
@@ -233,20 +359,66 @@ export function parsePages(pages, { documentId = "document" } = {}) {
       normalize(pages.map((p) => p.text).join("\n")),
     ),
   };
-  reconcileLedgerProfile({ lines, fields, declarations, unparsedLines, rules,
-    notes: extracted.issues, assign, documentId });
+  reconcileLedgerProfile({
+    lines,
+    fields,
+    declarations,
+    unparsedLines,
+    rules,
+    notes: extracted.issues,
+    assign,
+    documentId,
+  });
   // Profile-recognized lines no longer need a generic extraction warning.
-  const unknownSources = new Set(unparsedLines.map((l) => `${l.source.page}:${l.source.line}`));
+  const unknownSources = new Set(
+    unparsedLines.map((l) => `${l.source.page}:${l.source.line}`),
+  );
   const retainedWarnings = warnings.filter((w) => {
-    const match = w.match(/^Linha financeira não interpretada: página (\d+), linha (\d+)\./);
+    const match = w.match(
+      /^Linha financeira não interpretada: página (\d+), linha (\d+)\./,
+    );
     return !match || unknownSources.has(`${match[1]}:${match[2]}`);
   });
+  for (const page of pages.filter((p) => p.ocr))
+    extractionIssues.push({
+      id: `${documentId}:ocr:${page.page}`,
+      kind: "review",
+      resolvable: true,
+      message:
+        "Confira os valores desta página com a imagem original. A leitura por OCR não confirma valores financeiros automaticamente.",
+      source: {
+        documentId,
+        page: page.page,
+        sheet: page.sheet,
+        line: 1,
+        text: "Página lida por OCR",
+        confidence: page.confidence ?? 0.5,
+      },
+    });
+  const uniqueWarnings = retainedWarnings.filter(
+    (w) => !w.startsWith("Linha financeira não interpretada:"),
+  );
+  if (unparsedLines.length)
+    uniqueWarnings.push(
+      `${unparsedLines.length} linha(s) financeira(s) aguardam classificação. Confira a lista na auditoria.`,
+    );
+  const groupedIssues = new Map();
+  for (const issue of extractionIssues) {
+    const reason = issue.message.replace(/[A-Z]+\d+:\s*/g, "");
+    const key = `${issue.source.page}:${reason}`;
+    const previous = groupedIssues.get(key);
+    if (previous) { previous.sources.push(issue.source); previous.count++; }
+    else groupedIssues.set(key,{...issue,sources:[issue.source],count:1});
+  }
+  const reviewIssues = [...groupedIssues.values()].map(i => i.count > 1 ? {...i,message:`${i.count} ocorrências nesta aba/página: ${i.message}`} : i);
   return {
     fields,
     movements: extracted.movements,
     declarations,
     unparsedLines,
-    warnings: retainedWarnings,
+    warnings: uniqueWarnings,
+    extractionIssues: reviewIssues,
+    layoutKey,
     normalizationNotes: extracted.issues,
     rules,
     identity,

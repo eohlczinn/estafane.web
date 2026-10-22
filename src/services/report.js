@@ -2,6 +2,7 @@ import { infoFields, moneyFields } from "../../shared/fields.js";
 import { formatMoney } from "../../shared/money.js";
 import { summarizeBatch } from "../../shared/batch.js";
 import { reconcile } from "../../shared/reconciliation.js";
+import { sourceLocation } from "../../shared/source.js";
 export const statusLabels = {
   pending: "DADOS PENDENTES",
   short: "FALTA",
@@ -54,6 +55,7 @@ export function reportRows(fields, calc, prefs = {}) {
         "opening",
         "withdrawals",
         "supplies",
+        "expenses",
         "refunds",
         "cancellations",
         "reversals",
@@ -139,7 +141,7 @@ export function reportRows(fields, calc, prefs = {}) {
     for (const m of calc.movements)
       rows.push([
         m.description,
-        `${m.status === "excluded" || m.duplicateOf ? "EXCLUÍDO" : m.direction === "out" ? "SAÍDA −" : "ENTRADA +"} ${formatMoney(m.amountCents)} · pág. ${m.source.page}, linha ${m.source.line}`,
+        `${m.status === "excluded" || m.duplicateOf ? "EXCLUÍDO" : m.direction === "out" ? "SAÍDA −" : "ENTRADA +"} ${formatMoney(m.amountCents)} · ${sourceLocation(m.source)}`,
       ]);
   }
   if (calc.documents?.length)
@@ -151,7 +153,7 @@ export function reportRows(fields, calc, prefs = {}) {
       ]),
     );
   const history = (calc.history || []).filter((h) =>
-    ["resolution", "manual_grouping", "movement"].includes(h.kind),
+    ["resolution", "manual_grouping", "movement", "classification", "undo"].includes(h.kind),
   );
   if (history.length)
     rows.push(
@@ -181,7 +183,7 @@ export function closingReport(closing, prefs) {
   return {
     fields: closing.fields,
     calc,
-    rows: reportRows(closing.fields, calc, prefs),
+    rows: [...reportRows(closing.fields, calc, prefs), ...(audit.issues.length ? [["", "PENDÊNCIAS DO FECHAMENTO"], ...audit.issues.map(i => [i.field ? allFieldLabel(i.field) : "Conferência", i.message])] : [])],
     title: "RELATÓRIO DE FECHAMENTO DE CAIXA",
     market: closing.fields.market.value || prefs.market,
     final,
@@ -230,6 +232,8 @@ export function consolidatedReport(batch, prefs) {
       "Saldo líquido das diferenças",
       formatMoney(summary.netDifferenceCents),
     ]);
+  for (const [key,title] of [["byOperator","POR OPERADORA"],["byDate","POR DIA"],["byShift","POR TURNO"]])
+    if (summary[key]?.length) rows.push(["",title + " · SOMENTE CONFIRMADOS"],...summary[key].map(g => [g.label,`${g.count} fechamento(s) · vendas ${formatMoney(g.salesCents)} · diferença ${formatMoney(g.differenceCents)}`]));
   rows.push(["", "RESULTADO INDIVIDUAL DE CADA CAIXA"]);
   for (const c of batch.closings) {
     const included = summary.includedClosingIds.includes(c.id),

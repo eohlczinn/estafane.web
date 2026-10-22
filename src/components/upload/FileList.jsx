@@ -9,7 +9,7 @@ export default function FileList({ files, progress = [], onRemove, busy }) {
           <FileText size={22} />
           <div>
             <strong>{item.file.name}</strong>
-            <small>{(item.file.size / 1024).toFixed(1)} KB</small>
+            <small>{(item.file.size / 1024).toFixed(1)} KB · {progress[i]?.format ? `Detectado: ${progress[i].format.toUpperCase()}` : item.file.name.split(".").pop().toUpperCase()}</small>
             <FileStatus document={progress[i] || { status: "selected" }} />
             {progress[i]?.error && (
               <p className="field-error">{progress[i].error}</p>

@@ -1,11 +1,17 @@
-import { randomBytes, createHmac, scryptSync, timingSafeEqual, createHash } from "node:crypto";
+import {
+  randomBytes,
+  createHmac,
+  scryptSync,
+  timingSafeEqual,
+  createHash,
+} from "node:crypto";
 
 export const SESSION_COOKIE_NAME = "estefane_session";
 export const SESSION_DURATION_SECONDS = 7 * 24 * 60 * 60; // 7 dias
 
 // Segredo da sessão: persistente via env ou gerado em memória para o ciclo do processo
-const sessionSecret = process.env.SESSION_SECRET || randomBytes(32).toString("hex");
-
+const sessionSecret =
+  process.env.SESSION_SECRET || randomBytes(32).toString("hex");
 
 /**
  * Cria hash seguro scrypt para uma senha.
@@ -26,7 +32,10 @@ export function verifyPassword(password, storedHashOrPlain) {
     return false;
   }
 
-  if (typeof storedHashOrPlain === "string" && storedHashOrPlain.startsWith("scrypt:")) {
+  if (
+    typeof storedHashOrPlain === "string" &&
+    storedHashOrPlain.startsWith("scrypt:")
+  ) {
     const parts = storedHashOrPlain.split(":");
     if (parts.length !== 3) return false;
     const [, salt, expectedHex] = parts;
@@ -46,7 +55,14 @@ export function verifyPassword(password, storedHashOrPlain) {
  * Valida credenciais do usuário.
  */
 export function checkCredentials(username, password) {
-  if (!username || !password || typeof username !== "string" || typeof password !== "string") {
+  if (typeof username === "string" && username.length > 180 || typeof password === "string" && password.length > 512)
+    return {ok:false,error:"Usuário ou senha incorretos."};
+  if (
+    !username ||
+    !password ||
+    typeof username !== "string" ||
+    typeof password !== "string"
+  ) {
     return { ok: false, error: "Preencha usuário e senha." };
   }
 
@@ -54,15 +70,19 @@ export function checkCredentials(username, password) {
     process.env.ADMIN_USERNAME ||
     process.env.AUTH_USERNAME ||
     "estefane"
-  ).trim().toLowerCase();
+  )
+    .trim()
+    .toLowerCase();
 
   const suppliedUser = username.trim().toLowerCase();
   if (suppliedUser !== expectedUser) {
     return { ok: false, error: "Usuário ou senha incorretos." };
   }
 
-  const configuredHash = process.env.ADMIN_PASSWORD_HASH || process.env.AUTH_PASSWORD_HASH;
-  const configuredPlain = process.env.ADMIN_PASSWORD || process.env.AUTH_PASSWORD;
+  const configuredHash =
+    process.env.ADMIN_PASSWORD_HASH || process.env.AUTH_PASSWORD_HASH;
+  const configuredPlain =
+    process.env.ADMIN_PASSWORD || process.env.AUTH_PASSWORD;
 
   if (configuredHash) {
     if (!verifyPassword(password, configuredHash.trim())) {
@@ -78,7 +98,10 @@ export function checkCredentials(username, password) {
       console.error(
         "[Segurança] Nenhuma senha de administrador configurada! Defina ADMIN_PASSWORD ou ADMIN_PASSWORD_HASH no Railway.",
       );
-      return { ok: false, error: "Autenticação não configurada no servidor de produção." };
+      return {
+        ok: false,
+        error: "Autenticação não configurada no servidor de produção.",
+      };
     }
     // Senha padrão apenas para desenvolvimento local
     if (password !== "estefane123") {
@@ -105,6 +128,7 @@ export function createSessionToken(user) {
     sub: user.username,
     name: user.name || "Estefane",
     role: user.role || "Operadora de caixa",
+    sid: randomBytes(16).toString("hex"),
     iat: now,
     exp: now + SESSION_DURATION_SECONDS,
   };
@@ -141,7 +165,9 @@ export function verifySessionToken(token) {
   }
 
   try {
-    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf-8"));
+    const payload = JSON.parse(
+      Buffer.from(payloadB64, "base64url").toString("utf-8"),
+    );
     const now = Math.floor(Date.now() / 1000);
     if (!payload.exp || payload.exp < now) {
       return null;

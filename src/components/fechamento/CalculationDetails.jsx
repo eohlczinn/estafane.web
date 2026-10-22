@@ -16,6 +16,7 @@ export default function CalculationDetails() {
           ["+ Vendas em dinheiro", fields.cash.value],
           ["+ Suprimentos", fields.supplies.value],
           ["− Sangrias", fields.withdrawals.value],
+          ...(fields.expenses?.value != null ? [["− Despesas autorizadas",fields.expenses.value]] : []),
           [
             "− Devoluções aplicáveis",
             rules.refundTreatment === "included" ||

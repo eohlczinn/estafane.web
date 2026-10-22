@@ -13,6 +13,8 @@ import { parseMoney, editMoney, formatMoney } from "../../../shared/money.js";
 import { statusLabels } from "../../services/report.js";
 import MovementDetails from "./MovementDetails.jsx";
 import CalculationDetails from "./CalculationDetails.jsx";
+import UnknownLine from "./UnknownLine.jsx";
+import { sourceLocation } from "../../../shared/source.js";
 function Field({ fieldKey }) {
   const { fields, update, closing } = useClosing(),
     f = fields[fieldKey],
@@ -55,7 +57,7 @@ function Field({ fieldKey }) {
       <small className={error ? "field-error" : ""}>
         {error ||
           (f.source
-            ? `${closing.documents.find((d) => d.id === f.source.documentId)?.filename || "PDF"} · pág. ${f.source.page}, linha ${f.source.line} · ${f.original}`
+            ? `${closing.documents.find((d) => d.id === f.source.documentId)?.filename || "Documento"} · ${sourceLocation(f.source)} · ${f.original}`
             : f.status === "default"
               ? f.defaultReason
               : f.status === "manual"
@@ -90,10 +92,12 @@ function Resolution({ issue }) {
       <p>{issue.message}</p>
       {issue.source && (
         <small>
-          PDF {issue.source.documentId?.slice(0, 8)} · pág. {issue.source.page},
-          linha {issue.source.line}
+          {sourceLocation(issue.source)}
         </small>
       )}
+      {issue.sources?.length > 1 && <details><summary>Ver todas as origens ({issue.sources.length})</summary>
+        {issue.sources.map((source,i) => <p key={i}>{sourceLocation(source)} · {source.original || source.text}</p>)}
+      </details>}
       <label>
         Justificativa da conferência
         <input
@@ -128,6 +132,8 @@ export default function Review() {
       confirmed,
       setConfirmed,
       setNotice,
+      undo,
+      saveImportProfile,
     } = useClosing(),
     navigate = useNavigate(),
     calc = audit.calculation;
@@ -261,7 +267,7 @@ export default function Review() {
           {audit.issues
             .filter((i) => i.resolvable)
             .map((i) => (
-              <Resolution key={i.id} issue={i} />
+              i.unknownLineId ? <UnknownLine key={i.id} issue={i} /> : <Resolution key={i.id} issue={i} />
             ))}
         </div>
       )}
@@ -321,6 +327,8 @@ export default function Review() {
         </button>
       </div>
       <div className="closing-export-actions">
+        <button className="secondary" disabled={!closing.undoStack?.length} onClick={undo}>Desfazer última alteração</button>
+        {confirmed && closing.profileCorrections?.length > 0 && <button className="secondary" onClick={saveImportProfile}>Salvar classificações como perfil deste layout</button>}
         <button className="secondary" onClick={() => navigate("/imprimir")}>
           <Printer size={18} />
           Imprimir

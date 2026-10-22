@@ -16,9 +16,9 @@ export default function BatchResults() {
     return (
       <section className="panel">
         <h1>Fechamentos do lote</h1>
-        <p>Envie os PDFs para analisar um ou vários caixas.</p>
+        <p>Envie os documentos para analisar um ou vários caixas.</p>
         <Link className="primary" to="/ler-pdf">
-          Enviar PDFs
+          Importar documentos
         </Link>
       </section>
     );
@@ -168,6 +168,7 @@ export default function BatchResults() {
                 d.message ||
                 "Leitura concluída; a validação do fechamento é realizada separadamente."}
             </p>
+            {d.format && <p>Formato detectado: {d.format.toUpperCase()}{d.identity?.reportType ? ` · ${d.identity.reportType}` : ""}</p>}
             <small>SHA-256: {d.hash}</small>
             {d.duplicateOf && (
               <p>

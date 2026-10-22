@@ -29,7 +29,7 @@ import { estefaneProfile } from "../../services/profile.js";
 
 const links = [
   ["/", "Início", House],
-  ["/ler-pdf", "Ler PDF", FileText],
+  ["/ler-pdf", "Importar", FileText],
   ["/lote", "Fechamentos", ChartNoAxesColumnIncreasing],
   ["/relatorio", "Relatório", ChartNoAxesColumnIncreasing],
   ["/imprimir", "Imprimir", Printer],
@@ -89,7 +89,7 @@ export default function Layout({ children }) {
             Sua rotina mais leve.
           </h3>
           <p>
-            Do PDF ao fechamento,
+            Do documento ao fechamento,
             <br />
             com clareza e confiança.
           </p>
@@ -140,7 +140,7 @@ export default function Layout({ children }) {
             >
               <i />
               {busy
-                ? "Analisando PDF"
+                ? "Analisando documentos"
                 : confirmed
                   ? "Fechamento confirmado"
                   : backend === "offline"
@@ -148,7 +148,7 @@ export default function Layout({ children }) {
                     : backend === "checking"
                       ? "Verificando servidor"
                       : filename
-                        ? "PDF pronto para conferir"
+                        ? "Documento pronto para conferir"
                         : "Servidor conectado"}
             </span>
             <button
@@ -188,7 +188,7 @@ export default function Layout({ children }) {
                   <h3>Notificações do sistema</h3>
                   <p>
                     {notice ||
-                      "Nenhuma notificação. Seu próximo fechamento começa com um PDF."}
+                      "Nenhuma notificação. Seu próximo fechamento começa com um documento."}
                   </p>
                 </div>
               )}

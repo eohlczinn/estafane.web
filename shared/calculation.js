@@ -15,6 +15,7 @@ export function calculate(fields, rules = {}) {
     "opening",
     "withdrawals",
     "supplies",
+    "expenses",
     "refunds",
     "cancellations",
     "reversals",
@@ -123,6 +124,7 @@ export function calculate(fields, rules = {}) {
             v("cash"),
             v("supplies"),
             -v("withdrawals"),
+            -(v("expenses") ?? 0),
             -(rules.refundTreatment === "included" ||
             rules.refundTreatment === "non_cash"
               ? 0

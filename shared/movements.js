@@ -2,6 +2,7 @@
 export const movementTypes = {
   withdrawal: { field: "withdrawals", direction: "out", label: "Sangria" },
   supply: { field: "supplies", direction: "in", label: "Suprimento" },
+  expense: { field: "expenses", direction: "out", label: "Despesa autorizada" },
   opening: { field: "opening", direction: "in", label: "Fundo inicial" },
   cash_sale: { field: "cash", direction: "in", label: "Venda em dinheiro" },
   refund: {

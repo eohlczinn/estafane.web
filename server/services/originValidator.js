@@ -25,24 +25,40 @@ export function isAllowedOrigin(req) {
 
   // 2. Domínio público do Railway (RAILWAY_PUBLIC_DOMAIN / RAILWAY_STATIC_URL)
   if (process.env.RAILWAY_PUBLIC_DOMAIN) {
-    const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
-    if (normalized === `https://${railwayDomain}`.toLowerCase() || normalized === `http://${railwayDomain}`.toLowerCase()) {
+    const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN.trim()
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/+$/, "");
+    if (
+      normalized === `https://${railwayDomain}`.toLowerCase() ||
+      normalized === `http://${railwayDomain}`.toLowerCase()
+    ) {
       return true;
     }
   }
 
   if (process.env.RAILWAY_STATIC_URL) {
-    const staticUrl = process.env.RAILWAY_STATIC_URL.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
-    if (normalized === `https://${staticUrl}`.toLowerCase() || normalized === `http://${staticUrl}`.toLowerCase()) {
+    const staticUrl = process.env.RAILWAY_STATIC_URL.trim()
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/+$/, "");
+    if (
+      normalized === `https://${staticUrl}`.toLowerCase() ||
+      normalized === `http://${staticUrl}`.toLowerCase()
+    ) {
       return true;
     }
   }
 
   // 3. URLs públicas de aplicação (APP_URL / FRONTEND_URL)
-  if (process.env.APP_URL && normalizeOrigin(process.env.APP_URL) === normalized) {
+  if (
+    process.env.APP_URL &&
+    normalizeOrigin(process.env.APP_URL) === normalized
+  ) {
     return true;
   }
-  if (process.env.FRONTEND_URL && normalizeOrigin(process.env.FRONTEND_URL) === normalized) {
+  if (
+    process.env.FRONTEND_URL &&
+    normalizeOrigin(process.env.FRONTEND_URL) === normalized
+  ) {
     return true;
   }
 
@@ -50,7 +66,10 @@ export function isAllowedOrigin(req) {
   const host = req.get("host");
   if (host) {
     const hostOnly = host.trim().toLowerCase();
-    if (normalized === `https://${hostOnly}` || normalized === `http://${hostOnly}`) {
+    if (
+      normalized === `https://${hostOnly}` ||
+      normalized === `http://${hostOnly}`
+    ) {
       return true;
     }
   }
@@ -64,11 +83,11 @@ export function isAllowedOrigin(req) {
   }
 
   // 5. Origens locais de desenvolvimento padrão (localhost / 127.0.0.1 em qualquer porta)
-  const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(normalized);
+  const isLocalOrigin =
+    /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(normalized);
   if (isLocalOrigin) {
     return true;
   }
 
   return false;
 }
-

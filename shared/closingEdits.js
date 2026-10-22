@@ -1,4 +1,34 @@
 import { movementTotals, movementTypes } from "./movements.js";
+import { moneyFields } from "./fields.js";
+export function classifyUnknownLine(closing, id, field, value, reason, mode = "total") {
+  const line = closing.unparsedLines.find(l => l.id === id);
+  if (!line || !Object.hasOwn(moneyFields,field) || !Number.isSafeInteger(value) || Math.abs(value) > 1e12 || reason.trim().length < 8)
+    throw Error("Confira a linha, a categoria, o valor e o motivo da correção.");
+  const at = new Date().toISOString();
+  let next;
+  if (mode === "movement") {
+    const type = Object.keys(movementTypes).find(k => movementTypes[k].field === field);
+    if (!type || value < 0) throw Error("Escolha uma movimentação e informe sua magnitude positiva.");
+    const item = { id: id + ":manual", type, amountCents:value, direction:movementTypes[type].direction,
+      description:line.text, documentId:line.source.documentId, source:line.source, status:"manual", operationId:null, effect:null };
+    const movements = [...closing.movements, item];
+    next = editField({...closing, movements}, field, movementTotals(movements)[field], "manual", at);
+  } else if (mode === "total") next = editField(closing, field, value, "manual", at);
+  else throw Error("Tipo de correção inválido.");
+  return { ...next, resolutions:{...next.resolutions,[id]:{ reason:reason.trim(), at, field, value, mode }},
+    history:[...next.history,{kind:"classification",id,field,value,mode,reason:reason.trim(),source:line.source,at}],
+    profileCorrections: mode === "total" ? [...(next.profileCorrections || []), {layoutKey:line.layoutKey,label:line.label,field}] : next.profileCorrections };
+}
+export function rememberChange(previous, next) {
+  const keys = ["fields","movements","rules","resolutions","profileCorrections","notes"];
+  const snapshot = Object.fromEntries(keys.map(k => [k, previous[k]]));
+  return { ...next, undoStack:[...(previous.undoStack || []),snapshot].slice(-30) };
+}
+export function undoChange(closing) {
+  if (!closing.undoStack?.length) return closing;
+  return { ...closing, ...closing.undoStack.at(-1), undoStack:closing.undoStack.slice(0,-1), confirmed:false, reviewed:false,
+    history:[...closing.history,{kind:"undo",reason:"Última alteração desfeita pela operadora",at:new Date().toISOString()}] };
+}
 export function editField(
   closing,
   key,

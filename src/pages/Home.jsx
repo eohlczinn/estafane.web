@@ -36,9 +36,9 @@ export default function Home({ reader = false }) {
         </span>
         <div>
           <div className="eyebrow">SIMPLES, SEGURO E ORGANIZADO</div>
-          <h1>{reader ? "Leitura de PDF" : "Fechamento de Caixa"}</h1>
+          <h1>{reader ? "Importar documentos" : "Fechamento de Caixa"}</h1>
           <p>
-            Envie o relatório PDF do mercado para calcular os valores e gerar
+            Envie relatórios e planilhas do mercado para calcular os valores e gerar
             seu fechamento de caixa.
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function Home({ reader = false }) {
               <p>{label}</p>
               <strong>{value == null ? "—" : formatMoney(value)}</strong>
             </div>
-            <small>{value == null ? "Aguardando leitura do PDF" : sub}</small>
+            <small>{value == null ? "Aguardando leitura" : sub}</small>
           </section>
         ))}
       </div>
@@ -125,7 +125,7 @@ export default function Home({ reader = false }) {
               </span>
               <h2>Informações do caixa</h2>
               <span className={`mini-status ${filename ? "loaded" : ""}`}>
-                {filename ? "PDF lido" : "Aguardando PDF"}
+                {filename ? "Documento lido" : "Aguardando arquivo"}
               </span>
             </div>
             <dl>
@@ -173,7 +173,7 @@ export default function Home({ reader = false }) {
               <div className="empty-hint">
                 <FileCheck2 size={25} />
                 <p>
-                  Os dados reais do seu PDF
+                  Os dados do seu documento
                   <br />
                   aparecerão aqui após a análise.
                 </p>
@@ -196,7 +196,7 @@ export default function Home({ reader = false }) {
             {[
               [
                 "01",
-                "Envie seus PDFs",
+                "Envie seus documentos",
                 "O servidor lê cada documento do lote.",
               ],
               [

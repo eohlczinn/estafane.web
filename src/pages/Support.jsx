@@ -2,8 +2,8 @@ import React from "react";
 import { Headphones } from "lucide-react";
 const faq = [
   [
-    "Como enviar um ou vários PDFs?",
-    "Em Início ou Ler PDF, selecione ou arraste os documentos. Você pode adicionar mais arquivos, remover um deles ou limpar a seleção antes de analisar. Os limites do servidor aparecem na área de envio. Arquivos idênticos são detectados pelo conteúdo.",
+    "Como importar PDF, Excel ou outros documentos?",
+    "Em Início ou Importar, selecione ou arraste PDFs, XLSX, XLS, ODS, CSV, TXT, PNG ou JPEG. Você pode misturar formatos, adicionar arquivos e remover itens antes de analisar. Os limites aparecem na área de envio. Arquivos idênticos são detectados pelo conteúdo. Se um deles falhar, repita somente os arquivos com falha ou abra os resultados disponíveis.",
   ],
   [
     "Como conferir o fechamento?",
@@ -30,15 +30,23 @@ const faq = [
     "O sistema não transforma informações ausentes em zero. Fundo inicial, dinheiro, sangrias, suprimentos, devoluções e dinheiro contado são essenciais. Informe zero somente após verificar que não houve essa movimentação.",
   ],
   [
-    "O PDF do meu mercado é compatível?",
-    "As regras iniciais reconhecem rótulos comuns. A compatibilidade com o formato específico do mercado depende de validação com um PDF real. Totais ambíguos e linhas com vários valores exigem revisão.",
+    "O relatório do meu mercado é compatível?",
+    "A leitura reconhece rótulos comuns e tabelas com colunas identificadas. Um layout diferente pode exigir classificação manual. Planilhas com caixas independentes em abas completas são separadas; identidades misturadas na mesma tabela ficam pendentes. A compatibilidade com o sistema específico do mercado depende da conferência de um relatório real.",
+  ],
+  [
+    "Como funcionam fórmulas e linhas ocultas do Excel?",
+    "Fórmulas e macros nunca são executadas. Resultados de fórmulas armazenados no arquivo exigem conferência porque podem estar desatualizados. Fórmulas sem resultado permanecem pendentes. Linhas e abas ocultas são incluídas e identificadas na origem, para não omitir movimentações. Planilhas protegidas, com macros ou vínculos externos são recusadas.",
+  ],
+  [
+    "Como classificar uma linha desconhecida e guardar o aprendizado?",
+    "Na auditoria, abra a linha e compare sua origem. Escolha se é um total, uma movimentação individual ou apenas uma referência informativa. Informe a categoria, o valor e o motivo. O cálculo é atualizado e o histórico preservado; você pode desfazer a alteração. Depois de confirmar o fechamento, volte à conferência para salvar um perfil do layout. As sugestões serão usadas apenas no mesmo layout e continuarão exigindo revisão. Gerencie os perfis em Configurações.",
   ],
   [
     "Meus dados são enviados para outro serviço?",
-    "Não são usados serviços externos de leitura ou OCR. Os PDFs são enviados ao servidor desta instalação, que pode estar neste computador ou em uma hospedagem privada. Os arquivos temporários são descartados após a análise. Os resultados ficam na sessão do navegador e temporariamente na memória do servidor, por até 10 minutos na configuração padrão. Recarregar a página limpa a sessão financeira do navegador.",
+    "Não são usados serviços externos de leitura ou OCR. Os documentos são enviados ao servidor desta instalação. Os temporários são descartados após a análise. Resultados ficam na sessão do navegador e temporariamente na memória do servidor, por até 10 minutos na configuração padrão, vinculados à sessão que fez o envio. Recarregar a página limpa os dados financeiros do navegador. Perfis guardam apenas classificações no navegador, sem arquivos nem valores financeiros.",
   ],
   [
-    "Como os PDFs são agrupados?",
+    "Como os documentos são agrupados?",
     "Documentos com identidade completa e referência de fechamento ou período compatível podem ser associados. Nome da operadora sozinho não comprova a associação. Quando faltam evidências, os documentos ficam separados e você confirma se são independentes ou do mesmo fechamento. Resolva a associação antes de corrigir os valores.",
   ],
   [

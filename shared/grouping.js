@@ -11,7 +11,7 @@ const norm = (v) =>
 const identityKeys = ["market", "operator", "register", "date"];
 const val = (doc, k) => doc.fields?.[k]?.value;
 export function compareDocuments(a, b) {
-  if (a.hash && a.hash === b.hash) return "duplicate";
+  if (a.hash && a.hash === b.hash && !(a.partOf && b.partOf && a.id !== b.id)) return "duplicate";
   if (
     identityKeys.some(
       (k) => val(a, k) && val(b, k) && norm(val(a, k)) !== norm(val(b, k)),
@@ -181,6 +181,7 @@ export function mergeDocuments(documents, id) {
     declarations,
     rules,
     unparsedLines: documents.flatMap((d) => d.unparsedLines || []),
+    extractionIssues: documents.flatMap((d) => d.extractionIssues || []),
     mergeIssues,
     pages: documents.flatMap((d) =>
       d.pages.map((p) => ({ ...p, documentId: d.id, filename: d.filename })),

@@ -17,6 +17,7 @@ export const moneyFields = {
   opening: "Fundo inicial",
   withdrawals: "Sangrias",
   supplies: "Suprimentos",
+  expenses: "Despesas autorizadas em dinheiro",
   refunds: "Devoluções em dinheiro",
   cancellations: "Cancelamentos",
   reversals: "Estornos",

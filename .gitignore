@@ -152,3 +152,4 @@ dist/
 *.log
 tests/output/
 *.zip
+!vendor/xlsx-0.20.3.tgz

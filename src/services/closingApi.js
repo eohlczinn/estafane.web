@@ -1,4 +1,5 @@
 import { validateBatch } from "../../shared/contracts.js";
+import { readImportProfiles } from "../../shared/importProfiles.js";
 
 async function json(response) {
   const data = await response.json().catch(() => {
@@ -38,11 +39,12 @@ export async function analyzeFiles(
   files.forEach((f) =>
     form.append(
       "pdfs",
-      f.type ? f : new Blob([f], { type: "application/pdf" }),
+      f,
       f.name,
     ),
   );
   form.append("autoGroup", String(autoGroup));
+  form.append("importProfiles", JSON.stringify(readImportProfiles(localStorage)));
   let id;
   try {
     let data = validateBatch(

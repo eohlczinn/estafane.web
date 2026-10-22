@@ -1,7 +1,7 @@
 import { fork } from "node:child_process";
 export function analyzePDF(
   buffer,
-  { signal, onProgress = () => {}, documentId } = {},
+  { signal, onProgress = () => {}, documentId, format = "pdf", importProfiles = [] } = {},
 ) {
   return new Promise((resolve, reject) => {
     const env = { ...process.env };
@@ -42,7 +42,7 @@ export function analyzePDF(
         finish(
           Object.assign(
             new Error(data.error?.message || "Resposta inválida do leitor."),
-            { name: data.error?.name || "Error" },
+            { name: data.error?.name || "Error", status: data.error?.name === "DocumentError" ? 422 : undefined, failureKind:data.error?.failureKind },
           ),
         );
     });
@@ -68,6 +68,8 @@ export function analyzePDF(
           ? { filePath: buffer }
           : { data: buffer.toString("base64") }),
         documentId,
+        format,
+        importProfiles,
       },
       (error) => {
         if (error) {

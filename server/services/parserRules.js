@@ -9,8 +9,8 @@ export const normalize = (s) =>
 export const moneyRules = {
   sales:
     /^(?:total (?:geral )?(?:de )?vendas|vendas liquidas|vendas totais|total liquido|total vendido)\b/,
-  cash: /^(?:(?:total|vendas(?: recebidas)?|recebimentos)(?: em| de)?)?\s*(?:dinheiro|especie)(?:\s*\(vendas\))?\b/,
-  pix: /^(?:(?:total|vendas)(?: em| de)?)?\s*pix\b/,
+  cash: /^(?:(?:total|vendas(?: recebidas)?|recebimentos)(?: em| de)?)?\s*(?:dinheiro|especie|numerario)(?:\s*\(vendas\))?\b/,
+  pix: /^(?:(?:total|vendas)(?: em| de)?)?\s*(?:pix|pagamento instantaneo)\b/,
   debit:
     /^(?:(?:total|vendas)(?: em| de)?\s+)?(?:(?:cartao|cartoes) (?:de )?)?debito\b/,
   credit:
@@ -21,8 +21,10 @@ export const moneyRules = {
   other: /^(?:outras formas de pagamento|outros pagamentos|outros)\b/,
   opening:
     /^(?:fundo (?:inicial|de troco)|saldo inicial|troco inicial|abertura de caixa)\b/,
-  withdrawals: /^(?:total (?:de )?)?(?:sangrias?|retiradas?)\b/,
-  supplies: /^(?:total (?:de )?)?(?:suprimentos?|entradas?)\b/,
+  withdrawals: /^(?:total (?:de )?)?(?:sangrias?|retiradas?|recolhimentos?)\b/,
+  supplies:
+    /^(?:total (?:de )?)?(?:suprimentos?|entradas? de numerario|reforcos? de caixa|entradas?(?=\s*[:=|]|\s+[r\d-]))\b/,
+  expenses: /^(?:total (?:de )?)?despesas? autorizadas?(?: em dinheiro)?\b/,
   refunds: /^(?:devolucoes? em dinheiro|devolucao em dinheiro)\b/,
   cancellations: /^(?:total (?:de )?)?cancelamentos?\b/,
   reversals: /^(?:total (?:de )?)?estornos?\b/,

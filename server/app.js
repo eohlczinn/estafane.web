@@ -1,4 +1,6 @@
 import express from "express";
+import packageInfo from "../package.json" with { type: "json" };
+import { documentFormats } from "../shared/documentFormats.js";
 import multer from "multer";
 import { timingSafeEqual, createHash } from "node:crypto";
 import { analyzePDF } from "./services/analyzeService.js";
@@ -29,6 +31,7 @@ import {
   buildClearCookie,
 } from "./services/authService.js";
 import { isAllowedOrigin } from "./services/originValidator.js";
+import { validateImportProfiles } from "../shared/importProfiles.js";
 
 export const app = express();
 app.disable("x-powered-by");
@@ -78,6 +81,7 @@ app.locals.verifyAccess = async (req) => {
       )
     ) {
       req.user = { username: "service", role: "system" };
+      req.accessOwner = "bearer:" + createHash("sha256").update(expectedBearer).digest("hex");
       return true;
     }
     // Quando ACCESS_BEARER_TOKEN está estritamente definido, não aceita outros métodos
@@ -91,6 +95,7 @@ app.locals.verifyAccess = async (req) => {
     const session = verifySessionToken(sessionToken);
     if (session) {
       req.user = session;
+      req.accessOwner = createHash("sha256").update(sessionToken).digest("hex");
       return true;
     }
   }
@@ -107,6 +112,7 @@ app.locals.verifyAccess = async (req) => {
     const isLocalHost = ["127.0.0.1", "localhost", "::1"].includes(host);
     if (isLocalHost && isLocalRemote) {
       req.user = { username: "dev_local", role: "developer" };
+      req.accessOwner = "dev_local";
       return true;
     }
   }
@@ -115,6 +121,10 @@ app.locals.verifyAccess = async (req) => {
 };
 
 // Rotas de Autenticação
+app.use(["/api/auth/login","/api/auth/logout"], (req,res,next) => {
+  if (!isAllowedOrigin(req)) return res.status(403).json({error:"Origem não autorizada."});
+  res.set("Cache-Control","no-store"); next();
+});
 app.post("/api/auth/login", (req, res) => {
   const { username, password } = req.body || {};
   const authResult = checkCredentials(username, password);
@@ -196,6 +206,9 @@ app.get("/api/health", (_req, res) =>
   res.json({
     status: "ok",
     version: contractVersion,
+    appVersion: packageInfo.version,
+    revision: process.env.RENDER_GIT_COMMIT?.slice(0,12) || null,
+    supportedFormats: Object.keys(documentFormats),
     ...limits,
     ocr: "server-local",
     processingLocation: "server",
@@ -207,9 +220,9 @@ const upload = multer({
   storage: uploadStorage,
   limits: {
     files: limits.maxFiles,
-    fields: 1,
-    fieldSize: 256,
-    parts: limits.maxFiles + 1,
+    fields: 2,
+    fieldSize: 32768,
+    parts: limits.maxFiles + 2,
   },
 });
 
@@ -234,7 +247,7 @@ function receive(mode) {
       );
       const files = mode === "single" ? [req.file].filter(Boolean) : req.files;
       if (!files?.length)
-        throw Object.assign(new Error("Envie pelo menos um PDF."), {
+        throw Object.assign(new Error("Envie pelo menos um documento."), {
           status: 400,
         });
       if (req.aborted)
@@ -271,7 +284,7 @@ app.post(
         id = 'doc-' + hash;
       const data = await executionQueue.run(
         () =>
-          analyzePDF(file.path, { signal: controller.signal, documentId: id }),
+          analyzePDF(file.path, { signal: controller.signal, documentId: id, format: file.detectedFormat }),
         controller.signal,
       );
       const { type, ok, ...result } = data;
@@ -298,8 +311,13 @@ app.post(
   receive("batch"),
   async (req, res, next) => {
     try {
+      let importProfiles;
+      try { importProfiles = validateImportProfiles(JSON.parse(req.body.importProfiles || "[]")); }
+      catch { throw Object.assign(new Error("Perfis de importação inválidos."), {status:400}); }
       const job = await startBatch(req.uploadFiles, req.uploadDirectory, {
         autoGroup: req.body.autoGroup !== "false",
+        owner: req.accessOwner,
+        importProfiles,
       });
       if (req.aborted || res.destroyed) {
         job.controller.abort();
@@ -317,7 +335,7 @@ app.post(
 );
 
 app.get("/api/fechamento/lotes/:id", (req, res) => {
-  const job = getBatch(req.params.id);
+  const job = getBatch(req.params.id, req.accessOwner);
   if (!job)
     return res
       .status(404)
@@ -328,7 +346,7 @@ app.get("/api/fechamento/lotes/:id", (req, res) => {
 });
 
 app.delete("/api/fechamento/lotes/:id", (req, res) => {
-  const job = getBatch(req.params.id);
+  const job = getBatch(req.params.id, req.accessOwner);
   if (!job) return res.status(404).json({ error: "Lote não encontrado." });
   job.controller.abort();
   res.status(202).json({ id: job.id, status: "cancelling" });
@@ -349,18 +367,18 @@ app.use((error, req, res, _next) => {
         error.code === "LIMIT_BATCH_SIZE"
           ? `O lote excede ${limits.maxBatchBytes / 1024 / 1024} MB.`
           : error.code?.startsWith("LIMIT_")
-            ? `Envie até ${limits.maxFiles} PDFs, usando o campo correto.`
+            ? `Envie até ${limits.maxFiles} documentos, usando o campo correto.`
             : error.name === "PasswordException"
               ? "PDF protegido por senha. Exporte uma cópia sem senha."
               : error.name === "AnalysisTimeout"
                 ? "Tempo limite de leitura excedido."
                 : error.name === "AbortError"
                   ? "Análise cancelada."
-                  : error.status
+                  : error.status || error.name === "DocumentError"
                     ? error.message
                     : error.message?.includes("limite")
                       ? error.message
-                      : "Não foi possível ler o PDF. Verifique o arquivo ou use a conferência manual.",
+                      : "Não foi possível ler o documento. Verifique o arquivo ou use a conferência manual.",
     });
 });
 

@@ -5,7 +5,9 @@ export const movementPatterns = {
   withdrawal:
     /^(?:(?:sub)?total (?:de )?)?(?:sangrias?|retiradas?(?: de numerario)?|recolhimentos?|saida do caixa)\b/,
   supply:
-    /^(?:(?:sub)?total (?:de )?)?(?:suprimentos?|entradas? de numerario|entrada)\b/,
+    /^(?:(?:sub)?total (?:de )?)?(?:suprimentos?|reforcos? de caixa|entradas? de numerario|entrada(?=\s*[:=|]|\s+[r\d-]))\b/,
+  expense:
+    /^(?:(?:sub)?total (?:de )?)?despesas? autorizadas?(?: em dinheiro)?\b/,
   opening:
     /^(?:fundo(?: inicial| de troco)?|saldo inicial|troco inicial|abertura de caixa)\b/,
   cash_sale:
@@ -18,12 +20,18 @@ export const movementPatterns = {
 export function moneyTokens(text) {
   return [
     ...text.matchAll(
-      /(?:-\s*(?:R\$\s*)?|R\$\s*-?\s*)?(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?!\d)/g,
+      /(?:\(\s*)?(?:-\s*(?:R\$\s*)?|R\$\s*-?\s*)?(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?!\d)(?:\s*\)|-)?/g,
     ),
   ].map((m) => ({
     text: m[0],
     index: m.index,
-    value: parseMoney(m[0].replace(/R\$/g, "").replace(/\s/g, "")),
+    value: parseMoney(
+      m[0]
+        .replace(/R\$/g, "")
+        .replace(/\s/g, "")
+        .replace(/^\((.*)\)$/, "-$1")
+        .replace(/^(.*)-$/, "-$1"),
+    ),
   }));
 }
 export function classifyEffect(text) {
@@ -97,6 +105,15 @@ export function extractMovements(lines, documentId) {
       text: line.text,
       bounds: line.bounds || null,
       profile: "movimentacao",
+      sheet: line.sheet,
+      cell:
+        line.cells
+          ?.filter((c) => c.text || c.unsafe)
+          .map((c) => c.cell)
+          .join(", ") || null,
+      original: line.originalText || line.text,
+      hidden: !!line.hidden,
+      confidence: line.ocr ? (line.confidence ?? 0.5) : 0.95,
     };
     const subtotal =
       /^(?:sub)?total\b/.test(n) ||

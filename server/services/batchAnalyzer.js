@@ -8,6 +8,7 @@ import { cleanupUploadDirectory } from "./uploadStorage.js";
 import { groupDocuments } from "./groupingService.js";
 import { summarizeBatch } from "../../shared/batch.js";
 import { contractVersion, validateDocument } from "../../shared/contracts.js";
+import { detectDocument } from "./documentDetector.js";
 export const executionQueue = new ExecutionQueue(
   limits.concurrency,
   limits.maxBatches * limits.maxFiles + 5,
@@ -29,18 +30,11 @@ export function safeFilename(name) {
 export async function validateFile(file) {
   if (file.size > limits.maxUploadBytes)
     return "Arquivo excede o tamanho individual permitido.";
-  if (
-    !file.originalname.toLowerCase().endsWith(".pdf") ||
-    file.mimetype !== "application/pdf"
-  )
-    return "Envie um arquivo com extensão e tipo PDF.";
-  const handle = await fs.open(file.path, "r");
   try {
-    const signature = Buffer.alloc(5);
-    await handle.read(signature, 0, 5, 0);
-    if (signature.toString() !== "%PDF-") return "Assinatura de PDF inválida.";
-  } finally {
-    await handle.close();
+    file.detectedFormat = await detectDocument(file);
+  } catch (error) {
+    file.failureKind = error.failureKind || "invalid";
+    return error.message;
   }
   return null;
 }
@@ -49,11 +43,17 @@ export function canAcceptBatch() {
     [...jobs.values()].filter((j) => !j.finished).length < limits.maxBatches
   );
 }
-export function getBatch(id) {
-  return jobs.get(id);
+export function getBatch(id, owner) {
+  const job = jobs.get(id);
+  return job && (!job.owner || job.owner === owner) ? job : undefined;
 }
 export function batchSnapshot(job) {
-  const grouped = groupDocuments(job.documents, { autoGroup: job.autoGroup });
+  const documents = job.documents.flatMap(doc => doc.parts?.length ? doc.parts.map(part => ({
+    ...doc,...part,parts:undefined,partOf:doc.id,hash:doc.hash,
+    filename:`${doc.filename} · aba ${part.pages[0].sheet}`,
+    status:part.audit.canConfirm ? "completed" : "review_required",
+  })) : [doc]);
+  const grouped = groupDocuments(documents, { autoGroup: job.autoGroup });
   return {
     version: contractVersion,
     id: job.id,
@@ -65,14 +65,18 @@ export function batchSnapshot(job) {
           ? "partial"
           : "review_required"
       : "processing",
-    documents: job.documents,
+    documents,
     closings: grouped.closings,
     suggestions: grouped.suggestions,
-    summary: summarizeBatch(grouped.closings, job.documents),
+    summary: summarizeBatch(grouped.closings, documents),
     warnings: job.warnings || [],
   };
 }
-export async function startBatch(files, directory, { autoGroup = true } = {}) {
+export async function startBatch(
+  files,
+  directory,
+  { autoGroup = true, owner, importProfiles = [] } = {},
+) {
   if (!canAcceptBatch())
     throw Object.assign(new Error("Fila de lotes cheia."), { status: 429 });
   // Bound retained financial metadata as well as active processing.
@@ -89,6 +93,7 @@ export async function startBatch(files, directory, { autoGroup = true } = {}) {
     directory,
     finished: false,
     autoGroup,
+    owner,
   };
   jobs.set(job.id, job);
   try {
@@ -98,12 +103,14 @@ export async function startBatch(files, directory, { autoGroup = true } = {}) {
         error = await validateFile(file),
         duplicateOf = hashes.get(hash);
       const doc = validateDocument({
-        id: error || duplicateOf ? randomUUID() : 'doc-'+hash,
+        id: error || duplicateOf ? randomUUID() : "doc-" + hash,
         filename: safeFilename(file.originalname),
         hash,
         size: file.size,
+        format: file.detectedFormat,
         status: error ? "error" : duplicateOf ? "duplicate" : "waiting",
         error: error || undefined,
+        failureKind:error ? file.failureKind || "limit" : undefined,
         duplicateOf,
         message: duplicateOf ? "Este documento já foi adicionado." : undefined,
       });
@@ -125,6 +132,8 @@ export async function startBatch(files, directory, { autoGroup = true } = {}) {
               () =>
                 analyzePDF(file.path, {
                   documentId: doc.id,
+                  format: file.detectedFormat,
+                  importProfiles,
                   signal: job.controller.signal,
                   onProgress: ({ stage, page, pageCount }) =>
                     Object.assign(doc, { status: stage, page, pageCount }),
@@ -140,6 +149,7 @@ export async function startBatch(files, directory, { autoGroup = true } = {}) {
             validateDocument(doc);
           } catch (error) {
             doc.status = error.name === "AbortError" ? "cancelled" : "error";
+            doc.failureKind = error.failureKind || (error.name === "PasswordException" ? "unsupported" : "technical");
             doc.error =
               error.name === "PasswordException"
                 ? "PDF protegido por senha. Exporte uma cópia sem senha."
@@ -147,9 +157,10 @@ export async function startBatch(files, directory, { autoGroup = true } = {}) {
                   ? "Tempo limite de análise excedido."
                   : error.name === "AbortError"
                     ? "Análise cancelada."
-                    : error.message?.includes("limite")
+                    : error.name === "DocumentError" ||
+                        error.message?.includes("limite")
                       ? error.message
-                      : "Não foi possível ler este PDF. Verifique se está corrompido.";
+                      : "Não foi possível ler este documento. Verifique se está corrompido ou protegido.";
           } finally {
             await fs.rm(file.path, { force: true }).catch(() => {
               job.warnings = [

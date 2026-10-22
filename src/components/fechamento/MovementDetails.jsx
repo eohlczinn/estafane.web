@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useClosing } from "../../context/ClosingContext.jsx";
 import { movementTypes } from "../../../shared/movements.js";
 import { formatMoney, editMoney, parseMoney } from "../../../shared/money.js";
+import { sourceLocation } from "../../../shared/source.js";
 function Movement({ item }) {
   const { updateMovement } = useClosing(),
     [draft, setDraft] = useState(editMoney(item.amountCents)),
@@ -19,8 +20,7 @@ function Movement({ item }) {
           {formatMoney(item.amountCents)}
         </span>
         <small>
-          {item.source.documentId.slice(0, 8)} · pág. {item.source.page}, linha{" "}
-          {item.source.line} · {item.source.text}
+          {sourceLocation(item.source)} · {item.source.text}
         </small>
         {item.duplicateOf && (
           <small>Operação repetida identificada; não somada.</small>

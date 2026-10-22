@@ -109,12 +109,17 @@ export function reconcile(
         kind: "conflict",
       });
   }
+  for (const issue of closing.extractionIssues || [])
+    if (!resolutions[issue.id]?.reason?.trim()) add(issue.id, issue.message, { ...issue, kind:"review" });
   for (const line of unparsedLines)
     if (!resolutions[line.id]?.reason?.trim())
       add(line.id, "Linha financeira não interpretada: " + line.text, {
         source: line.source,
         kind: "review",
         resolvable: true,
+        unknownLineId: line.id,
+        value: line.value,
+        reason: line.reason,
       });
   for (const conflict of closing.mergeIssues || [])
     if (

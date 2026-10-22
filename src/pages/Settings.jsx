@@ -17,6 +17,7 @@ import {
 import PaperFormats from "../components/printing/PaperFormats.jsx";
 import { useClosing } from "../context/ClosingContext.jsx";
 import { estefaneProfile } from "../services/profile.js";
+import ImportProfiles from "../components/upload/ImportProfiles.jsx";
 function Toggle({ label, checked, onChange, description }) {
   return (
     <label className="settings-toggle">
@@ -128,7 +129,7 @@ export default function Settings() {
           ["efeitos", "Movimento e frases"],
           ["mercado", "Mercado"],
           ["fechamento", "Fechamento"],
-          ["processamento", "PDFs e lotes"],
+          ["processamento", "Documentos e lotes"],
           ["impressao", "Impressão"],
           ["relatorios", "Relatórios"],
           ["perfil-local", "Perfil"],
@@ -330,7 +331,7 @@ export default function Settings() {
           </div>
           <p className="muted">
             Opcional. PNG ou JPEG até 2 MB, armazenado somente neste navegador.
-            Dados identificados no PDF prevalecem sobre os padrões.
+            Dados identificados no documento prevalecem sobre os padrões.
           </p>
           {error && (
             <p role="alert" className="error-message">
@@ -404,7 +405,7 @@ export default function Settings() {
         </Section>
         <Section
           id="processamento"
-          title="Processamento de PDFs"
+          title="Importação de documentos"
           Icon={FileText}
         >
           <MarginInput
@@ -415,7 +416,7 @@ export default function Settings() {
             onChange={(v) => set("maxBatchFiles", v)}
           />
           <Toggle
-            label="Avisar sobre PDFs duplicados"
+            label="Avisar sobre arquivos duplicados"
             checked={prefs.warnDuplicates}
             onChange={(v) => set("warnDuplicates", v)}
             description="Arquivos idênticos são sempre excluídos da soma, mesmo sem o aviso."
@@ -477,6 +478,7 @@ export default function Settings() {
             relatório para permitir a conferência.
           </p>
         </Section>
+        <ImportProfiles />
         <Section id="perfil-local" title="Perfil da Estefane" Icon={UserRound}>
           <div className="settings-profile">
             <img src="/estefane.jpg" alt="Estefane" />
