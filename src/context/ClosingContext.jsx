@@ -5,6 +5,7 @@ import {
   writePreferences,
   normalizePreferences,
 } from "../services/preferences.js";
+import { useAppearance } from "../hooks/useAppearance.js";
 import { reconcile } from "../../shared/reconciliation.js";
 import { summarizeBatch } from "../../shared/batch.js";
 import {
@@ -62,25 +63,10 @@ export function ClosingProvider({ children }) {
       normalizePreferences(typeof value === "function" ? value(old) : value),
     );
   }
+  useAppearance(prefs);
   useEffect(() => {
     if (!writePreferences(localStorage, prefs))
       setNotice("As preferências não puderam ser salvas neste navegador.");
-    const mq = matchMedia("(prefers-color-scheme: dark)");
-    function apply() {
-      document.documentElement.dataset.theme =
-        prefs.theme === "system"
-          ? mq.matches
-            ? "dark"
-            : "light"
-          : prefs.theme;
-      document.documentElement.dataset.accent = prefs.accent;
-      document.documentElement.dataset.motion =
-        prefs.animation === "off" ? "reduce" : "normal";
-      document.documentElement.dataset.animation = prefs.animation;
-    }
-    apply();
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
   }, [prefs]);
   useEffect(() => {
     function refresh() {
@@ -248,9 +234,11 @@ export function ClosingProvider({ children }) {
         ),
       });
       if (combine && suggestion.closingIds.includes(activeId)) {
-        const previous=batch.closings.find(c=>c.id===activeId);
-        const replacement=next.closings.find(c=>c.documentIds.some(id=>previous.documentIds.includes(id)));
-        setActiveId(replacement?.id||next.closings[0]?.id||null);
+        const previous = batch.closings.find((c) => c.id === activeId);
+        const replacement = next.closings.find((c) =>
+          c.documentIds.some((id) => previous.documentIds.includes(id)),
+        );
+        setActiveId(replacement?.id || next.closings[0]?.id || null);
       }
     } catch (error) {
       setNotice(error.message);

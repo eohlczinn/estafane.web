@@ -27,9 +27,6 @@ import {
   parseCookies,
   buildSessionCookie,
   buildClearCookie,
-  checkRateLimit,
-  registerFailedAttempt,
-  clearRateLimit,
 } from "./services/authService.js";
 import { isAllowedOrigin } from "./services/originValidator.js";
 
@@ -119,21 +116,13 @@ app.locals.verifyAccess = async (req) => {
 
 // Rotas de Autenticação
 app.post("/api/auth/login", (req, res) => {
-  const ip = req.ip || req.socket.remoteAddress || "unknown";
-  const limitCheck = checkRateLimit(ip);
-  if (limitCheck.blocked) {
-    return res.status(429).json({ error: limitCheck.message });
-  }
-
   const { username, password } = req.body || {};
   const authResult = checkCredentials(username, password);
 
   if (!authResult.ok) {
-    registerFailedAttempt(ip);
     return res.status(401).json({ error: authResult.error });
   }
 
-  clearRateLimit(ip);
   const token = createSessionToken(authResult.user);
   const isSecure = isSecureRequest(req);
   res.setHeader("Set-Cookie", buildSessionCookie(token, isSecure));

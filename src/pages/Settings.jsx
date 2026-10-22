@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import PaperFormats from "../components/printing/PaperFormats.jsx";
 import { useClosing } from "../context/ClosingContext.jsx";
+import { estefaneProfile } from "../services/profile.js";
 function Toggle({ label, checked, onChange, description }) {
   return (
     <label className="settings-toggle">
@@ -124,6 +125,7 @@ export default function Settings() {
       >
         {[
           ["aparencia", "Aparência"],
+          ["efeitos", "Movimento e frases"],
           ["mercado", "Mercado"],
           ["fechamento", "Fechamento"],
           ["processamento", "PDFs e lotes"],
@@ -197,6 +199,81 @@ export default function Settings() {
               <option value="normal">Normais</option>
             </select>
           </label>
+        </Section>
+        <Section
+          id="efeitos"
+          title="Movimento e frases"
+          Icon={SlidersHorizontal}
+        >
+          <p className="muted">
+            Efeitos leves para dar vida ao seu espaço. A preferência de
+            movimento reduzido do dispositivo é respeitada.
+          </p>
+          <Toggle
+            label="Foto em movimento"
+            checked={prefs.floatingPhoto}
+            onChange={(v) => set("floatingPhoto", v)}
+            description="Flutuação suave na foto da Estefane e na ilustração do menu."
+          />
+          <Toggle
+            label="Brilho suave no fundo"
+            checked={prefs.ambientGlow}
+            onChange={(v) => set("ambientGlow", v)}
+            description="Luz discreta no perfil, sem vídeos ou partículas pesadas."
+          />
+          <Toggle
+            label="Efeitos ao passar o mouse"
+            checked={prefs.hoverEffects}
+            onChange={(v) => set("hoverEffects", v)}
+          />
+          <Toggle
+            label="Transição entre páginas"
+            checked={prefs.pageTransitions}
+            onChange={(v) => set("pageTransitions", v)}
+          />
+          <Toggle
+            label="Mostrar frases de inspiração"
+            checked={prefs.showQuotes}
+            onChange={(v) => set("showQuotes", v)}
+          />
+          <Toggle
+            label="Alternar frases automaticamente"
+            checked={prefs.autoRotateQuotes}
+            onChange={(v) => set("autoRotateQuotes", v)}
+            description="Você também pode pausar ou avançar as frases manualmente."
+          />
+          <label>
+            Estilo das frases
+            <select
+              value={prefs.quoteCategory}
+              onChange={(e) => set("quoteCategory", e.target.value)}
+            >
+              <option value="mixed">Fé e motivação</option>
+              <option value="faith">Religiosas: fé e gratidão</option>
+              <option value="motivation">
+                Motivacionais: carinho e incentivo
+              </option>
+            </select>
+          </label>
+          <label>
+            Tempo de cada frase
+            <select
+              value={prefs.quoteInterval}
+              onChange={(e) => set("quoteInterval", Number(e.target.value))}
+            >
+              {[8, 12, 20, 30, 60].map((v) => (
+                <option key={v} value={v}>
+                  {v} segundos
+                </option>
+              ))}
+            </select>
+          </label>
+          {(prefs.animation === "off" || prefs.reduceMotion) && (
+            <p className="muted">
+              As animações estão desativadas em Aparência. As frases continuam
+              disponíveis pelo botão de avançar.
+            </p>
+          )}
         </Section>
         <Section id="mercado" title="Mercado" Icon={Store}>
           <label>
@@ -405,13 +482,15 @@ export default function Settings() {
             <img src="/estefane.jpg" alt="Estefane" />
             <div>
               <h3>Estefane</h3>
-              <p>22 anos · Águas Lindas de Goiás</p>
+              <p>
+                {estefaneProfile.age} anos · {estefaneProfile.city}
+              </p>
               <span>Operadora de caixa</span>
             </div>
           </div>
           <p className="muted">
-            Perfil local e informativo. Não há autenticação ou cadastro de
-            usuários.
+            Dados do perfil da Estefane. Os ícones sociais são decorativos e não
+            abrem contas externas.
           </p>
         </Section>
       </div>

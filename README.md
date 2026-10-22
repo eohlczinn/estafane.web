@@ -66,7 +66,7 @@ Rotas da API:
 O sistema possui autenticação nativa completa para ambiente de produção (Railway) e dispositivos móveis:
 
 - **Sessão por Cookie HttpOnly**: os tokens de sessão são assinados com HMAC-SHA256, com flags `HttpOnly`, `SameSite=Lax` e `Secure` (em HTTPS / produção). O frontend nunca tem acesso direto ao token, protegendo contra XSS.
-- **Proteção contra Força Bruta**: limite de tentativas consecutivas incorretas (5 tentativas bloqueiam temporariamente por 15 minutos).
+- **Login sem bloqueio por tentativas**: uma senha incorreta permite tentar novamente imediatamente, sem contador ou espera de 15 minutos. O acesso continua exigindo usuário, senha e sessão válida.
 - **Proteção contra CSRF**: validação estrita de origens confiáveis para requisições de modificação.
 - **Armazenamento Seguro de Senha**: suporte a hash de alta derivação computacional `scrypt` (`ADMIN_PASSWORD_HASH`) ou senha via variável de ambiente (`ADMIN_PASSWORD`). Nunca armazene senhas ou tokens no código-fonte.
 
@@ -156,3 +156,11 @@ Na pasta `estefane-web`, execute `npm test`, `railway login`, `railway status` e
 `railway.json` configura Railpack, build `npm run build`, início em produção e healthcheck `/healthz`. `.node-version` seleciona Node 24. O servidor usa `PORT` da plataforma e escuta em `0.0.0.0` quando `NODE_ENV=production`, preservando o endereço local no desenvolvimento. Não use `npm test` como comando de início: ele encerra após a suíte. A rota pública `/healthz` retorna apenas status; os dados em `/api` continuam protegidos por sessão.
 
 Configure `ADMIN_PASSWORD_HASH` (ou `ADMIN_PASSWORD`) e `SESSION_SECRET` nas variáveis do serviço. Não coloque segredos no Git. Após publicar, verifique a URL pública, o login e um PDF fictício autenticado. Configuração oficial: https://docs.railway.com/config-as-code
+
+### Perfil, mensagens e movimento
+
+O perfil usa os dados de `src/services/profile.js` (Estefane, 21 anos). Instagram, Facebook e WhatsApp são apenas ícones decorativos, sem links para perfis inventados. `Encouragement.jsx` compartilha frases religiosas e motivacionais entre início e perfil, com pausa, avanço, categoria e intervalo de 8 a 60 segundos. O temporizador para quando a aba fica oculta e quando movimento reduzido está ativo.
+
+As preferências de foto flutuante, brilho, hover e transição são independentes e persistem no navegador. `src/hooks/useAppearance.js` aplica o tema e o movimento no login e na área autenticada; `src/styles/personal.css` mantém os novos estilos separados do arquivo geral, usando transform e opacity, sem dependências ou animação quadro a quadro em JavaScript. A opção Sem animações e o movimento reduzido do sistema têm prioridade.
+
+`npm run dev` e `npm start` carregam `.env.railway` quando esse arquivo local existe, para usar a mesma senha configurada. O arquivo continua ignorado pelo Git e pelo upload do Railway. Em produção, as variáveis do Railway prevalecem. O login não registra tentativas nem mantém bloqueio por tempo; senha incorreta retorna 401 e permite nova tentativa imediatamente.

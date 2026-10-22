@@ -1,0 +1,530 @@
+/* Perfil e efeitos: apenas transform/opacity, sem vídeos ou bibliotecas extras. */
+.personal-profile-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.12fr) minmax(280px, .88fr);
+    gap: 24px;
+    align-items: start;
+    max-width: 1150px
+}
+
+.personal-profile-grid>* {
+    min-width: 0
+}
+
+.personal-profile.profile-page {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding-bottom: 30px
+}
+
+.personal-profile .profile-banner {
+    height: 158px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    color: #583497;
+    padding: 24px 35px 58px
+}
+
+.profile-banner>* {
+    z-index: 1;
+    position: relative
+}
+
+.profile-banner span {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .025em
+}
+
+.living-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden
+}
+
+.living-card::before {
+    content: "";
+    position: absolute;
+    inset: -25%;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 25% 30%, rgba(155, 110, 255, .24), transparent 55%), radial-gradient(ellipse at 80% 70%, rgba(246, 144, 200, .22), transparent 55%);
+    animation: ambient-drift 14s ease-in-out infinite alternate
+}
+
+.personal-profile .profile-banner::before {
+    z-index: 0
+}
+
+.personal-profile>.living-avatar {
+    width: 122px;
+    height: 122px;
+    display: block;
+    margin: -61px auto 0;
+    border-width: 6px;
+    box-shadow: 0 8px 25px rgba(88, 52, 151, .16)
+}
+
+.living-avatar,
+.floating-art {
+    animation: gentle-float 7s ease-in-out infinite
+}
+
+.profile-name-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 20px
+}
+
+.profile-name-row h2 {
+    font-size: 29px;
+    letter-spacing: -.04em;
+    margin: 0
+}
+
+.profile-age {
+    background: var(--soft);
+    color: var(--accent);
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 20px
+}
+
+.personal-profile .profile-role {
+    margin: 12px 0
+}
+
+.profile-intro {
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--muted);
+    margin: 0 auto 20px;
+    max-width: 320px
+}
+
+.profile-socials {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap
+}
+
+.social-decoration {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    font-size: 12px;
+    background: var(--panel);
+    transition: transform .22s, background .22s
+}
+
+.social-decoration.instagram svg {
+    color: #d84e9a
+}
+
+.social-decoration.facebook svg {
+    color: #5087ea
+}
+
+.social-decoration.whatsapp svg {
+    color: #15a776
+}
+
+.social-decoration:hover {
+    transform: translateY(-3px);
+    background: var(--soft)
+}
+
+.social-caption {
+    color: var(--muted);
+    font-size: 10px;
+    margin: 12px 0 20px
+}
+
+.personal-profile dl {
+    max-width: 100%
+}
+
+.personal-profile dl dt {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--muted);
+    font-size: 12px
+}
+
+.personal-profile dl dd {
+    font-size: 13px
+}
+
+.profile-inspiration {
+    display: grid;
+    gap: 20px
+}
+
+.encouragement {
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 25px;
+    background: linear-gradient(135deg, rgba(145, 102, 255, .09), rgba(242, 160, 212, .06)), var(--panel);
+    min-width: 0
+}
+
+.encouragement-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent);
+    font-size: 9px;
+    letter-spacing: .14em;
+    font-weight: 700
+}
+
+.encouragement-copy {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-height: 150px;
+    padding: 26px 0 20px;
+    animation: quote-appear .45s ease both
+}
+
+.encouragement-copy>svg {
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 5px
+}
+
+.encouragement-copy p {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.65;
+    font-weight: 500;
+    letter-spacing: -.02em
+}
+
+.encouragement-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid var(--line);
+    padding-top: 14px
+}
+
+.encouragement-controls>span {
+    font-size: 10px;
+    color: var(--muted)
+}
+
+.encouragement-controls>div {
+    display: flex;
+    gap: 6px
+}
+
+.encouragement-controls button {
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    color: var(--accent);
+    background: var(--panel);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform .2s, background .2s
+}
+
+.encouragement-controls button:hover {
+    background: var(--soft);
+    transform: translateY(-2px)
+}
+
+.encouragement.compact {
+    display: grid;
+    grid-template-columns: 185px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 15px 20px;
+    margin-bottom: 22px;
+    border-radius: 17px
+}
+
+.encouragement.compact .encouragement-copy {
+    padding: 0;
+    min-height: 55px;
+    align-items: center
+}
+
+.encouragement.compact .encouragement-copy p {
+    font-size: 13px;
+    line-height: 1.7
+}
+
+.encouragement.compact .encouragement-copy>svg {
+    display: none
+}
+
+.encouragement.compact .encouragement-controls {
+    border: 0;
+    padding: 0
+}
+
+.encouragement.compact .encouragement-controls>span {
+    display: none
+}
+
+.profile-routine {
+    padding: 25px
+}
+
+.profile-routine .eyebrow {
+    font-size: 8px;
+    line-height: 1.8
+}
+
+.profile-routine h2 {
+    font-size: 21px;
+    line-height: 1.4;
+    margin: 10px 0 22px
+}
+
+.profile-routine ul {
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 17px;
+    margin: 0 0 26px
+}
+
+.profile-routine li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--muted)
+}
+
+.profile-routine li svg {
+    color: var(--accent);
+    flex-shrink: 0
+}
+
+.profile-routine a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600
+}
+
+.profile-session {
+    display: grid;
+    justify-items: center;
+    gap: 15px;
+    padding: 4px 12px
+}
+
+.profile-session>span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted)
+}
+
+[data-theme="dark"] .personal-profile .profile-banner {
+    background: linear-gradient(120deg, #34264e, #402b48, #263751);
+    color: #e5d7ff
+}
+
+[data-animation="subtle"] .living-avatar,
+[data-animation="subtle"] .floating-art {
+    animation-name: gentle-float-subtle;
+    animation-duration: 10s
+}
+
+[data-floating-photo="false"] .living-avatar,
+[data-floating-photo="false"] .floating-art {
+    animation: none;
+    transform: none
+}
+
+[data-ambient-glow="false"] .living-card::before {
+    display: none
+}
+
+[data-page-transitions="false"] main {
+    animation: none
+}
+
+[data-hover-effects="false"] :is(.social-decoration, .encouragement-controls button, .paper-option, .theme-card, .panel, .primary, .secondary):hover {
+    transform: none
+}
+
+[data-motion="reduce"] *::after {
+    animation: none !important;
+    transition: none !important
+}
+
+@keyframes gentle-float {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(-.5deg)
+    }
+
+    50% {
+        transform: translateY(-4px) rotate(.5deg)
+    }
+}
+
+@keyframes gentle-float-subtle {
+
+    0%,
+    100% {
+        transform: translateY(0)
+    }
+
+    50% {
+        transform: translateY(-1.5px)
+    }
+}
+
+@keyframes ambient-drift {
+    from {
+        transform: translate(-3%, 0);
+        opacity: .7
+    }
+
+    to {
+        transform: translate(3%, 3%);
+        opacity: 1
+    }
+}
+
+@keyframes quote-appear {
+    from {
+        opacity: 0;
+        transform: translateY(4px)
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0)
+    }
+}
+
+@media (max-width:1050px) {
+    .personal-profile-grid {
+        grid-template-columns: minmax(0, 1fr)
+    }
+
+    .profile-inspiration {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+    }
+
+    .profile-session {
+        grid-column: 1/-1
+    }
+
+    .encouragement.compact {
+        grid-template-columns: minmax(0, 1fr) auto
+    }
+
+    .encouragement.compact .encouragement-label {
+        grid-column: 1/-1
+    }
+
+    .encouragement.compact .encouragement-copy {
+        min-height: 45px
+    }
+}
+
+@media (max-width:600px) {
+    .profile-inspiration {
+        grid-template-columns: minmax(0, 1fr)
+    }
+
+    .personal-profile .profile-banner {
+        padding-left: 20px;
+        padding-right: 20px;
+        gap: 10px
+    }
+
+    .profile-banner span {
+        font-size: 12px
+    }
+
+    .personal-profile.profile-page {
+        padding-left: 20px;
+        padding-right: 20px
+    }
+
+    .personal-profile .profile-banner {
+        margin-left: -20px;
+        margin-right: -20px
+    }
+
+    .personal-profile dl>div {
+        display: grid;
+        gap: 8px
+    }
+
+    .personal-profile dl dd {
+        text-align: left
+    }
+
+    .encouragement-copy p {
+        font-size: 18px
+    }
+
+    .social-decoration {
+        font-size: 11px;
+        padding: 9px
+    }
+
+    .encouragement {
+        padding: 22px
+    }
+
+    .profile-routine {
+        padding: 22px
+    }
+
+    .personal-profile .profile-actions-bar a {
+        font-size: 11px
+    }
+}
+
+@media (prefers-reduced-motion:reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important
+    }
+}
+
+@media print {
+
+    .encouragement,
+    .profile-socials {
+        display: none !important
+    }
+}

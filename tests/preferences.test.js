@@ -47,6 +47,16 @@ it("normaliza limites e opções inválidas", () => {
   expect(p.paper).toBe("a4");
   expect(p.logo).toBe("");
 });
+it("salva efeitos independentes e normaliza o intervalo e a categoria das frases", () => {
+  const store = memory();
+  writePreferences(store, { ...defaultPreferences, floatingPhoto: false, ambientGlow: false,
+    hoverEffects: false, pageTransitions: false, showQuotes: true, autoRotateQuotes: false,
+    quoteCategory: "faith", quoteInterval: 20 });
+  expect(readPreferences(store)).toMatchObject({ floatingPhoto: false, ambientGlow: false,
+    hoverEffects: false, pageTransitions: false, autoRotateQuotes: false, quoteCategory: "faith", quoteInterval: 20 });
+  expect(normalizePreferences({ quoteCategory: "invalida", quoteInterval: 0 })).toMatchObject({ quoteCategory: "mixed", quoteInterval: 8 });
+  expect(normalizePreferences({ quoteInterval: 999 }).quoteInterval).toBe(60);
+});
 it("recupera preferências corrompidas e armazenamento indisponível", () => {
   expect(readPreferences({ getItem: () => "{" })).toEqual(defaultPreferences);
   expect(

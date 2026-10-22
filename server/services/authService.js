@@ -2,25 +2,10 @@ import { randomBytes, createHmac, scryptSync, timingSafeEqual, createHash } from
 
 export const SESSION_COOKIE_NAME = "estefane_session";
 export const SESSION_DURATION_SECONDS = 7 * 24 * 60 * 60; // 7 dias
-export const MAX_FAILED_ATTEMPTS = 5;
-export const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutos
 
 // Segredo da sessão: persistente via env ou gerado em memória para o ciclo do processo
 const sessionSecret = process.env.SESSION_SECRET || randomBytes(32).toString("hex");
 
-// Rate limit em memória para proteção contra força bruta
-const loginAttempts = new Map();
-
-// Limpeza periódica de tentativas antigas
-const attemptCleaner = setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of loginAttempts.entries()) {
-    if (entry.lockedUntil < now && now - entry.lastAttemptAt > LOCKOUT_MS) {
-      loginAttempts.delete(ip);
-    }
-  }
-}, 10 * 60 * 1000);
-attemptCleaner.unref();
 
 /**
  * Cria hash seguro scrypt para uma senha.
@@ -220,47 +205,3 @@ export function buildClearCookie(isSecure = false) {
   if (isSecure) parts.push("Secure");
   return parts.join("; ");
 }
-
-/**
- * Proteção contra força bruta por IP.
- */
-export function checkRateLimit(ip) {
-  const now = Date.now();
-  const entry = loginAttempts.get(ip);
-  if (!entry) return { blocked: false };
-
-  if (entry.lockedUntil > now) {
-    const waitSeconds = Math.ceil((entry.lockedUntil - now) / 1000);
-    const waitMinutes = Math.ceil(waitSeconds / 60);
-    return {
-      blocked: true,
-      waitMinutes,
-      message: `Muitas tentativas de login incorretas. Tente novamente em ${waitMinutes} minuto${waitMinutes > 1 ? "s" : ""}.`,
-    };
-  }
-
-  // Janela expirada, reinicia
-  if (now - entry.lastAttemptAt > LOCKOUT_MS) {
-    loginAttempts.delete(ip);
-    return { blocked: false };
-  }
-
-  return { blocked: false };
-}
-
-export function registerFailedAttempt(ip) {
-  const now = Date.now();
-  const entry = loginAttempts.get(ip) || { count: 0, firstAttemptAt: now, lastAttemptAt: now, lockedUntil: 0 };
-  entry.count++;
-  entry.lastAttemptAt = now;
-
-  if (entry.count >= MAX_FAILED_ATTEMPTS) {
-    entry.lockedUntil = now + LOCKOUT_MS;
-  }
-  loginAttempts.set(ip, entry);
-}
-
-export function clearRateLimit(ip) {
-  loginAttempts.delete(ip);
-}
-

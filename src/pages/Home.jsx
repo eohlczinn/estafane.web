@@ -21,8 +21,9 @@ import { formatMoney } from "../../shared/money.js";
 import Upload from "../components/upload/Upload.jsx";
 import Review from "../components/fechamento/Review.jsx";
 import DocumentSource from "../components/fechamento/DocumentSource.jsx";
+import Encouragement from "../components/profile/Encouragement.jsx";
 export default function Home({ reader = false }) {
-  const { fields, rules, filename, pages } = useClosing(),
+  const { fields, rules, filename, pages, prefs } = useClosing(),
     calc = calculate(fields, rules);
   const [manual, setManual] = useState(() =>
     new URLSearchParams(window.location.search).has("conferir"),
@@ -65,6 +66,7 @@ export default function Home({ reader = false }) {
           <Printer size={18} /> Imprimir fechamento
         </Link>
       </div>
+      {!reader && <Encouragement prefs={prefs} compact />}
       <div className="stats-grid">
         {[
           [

@@ -4,6 +4,14 @@ export const defaultPreferences = {
   accent: "purple",
   animation: "normal",
   reduceMotion: false,
+  floatingPhoto: true,
+  ambientGlow: true,
+  hoverEffects: true,
+  pageTransitions: true,
+  showQuotes: true,
+  autoRotateQuotes: true,
+  quoteCategory: "mixed",
+  quoteInterval: 12,
   paper: "a4",
   market: "Pingo De Ouro",
   operator: "Estefane",
@@ -35,9 +43,12 @@ const enums = {
   accent: ["purple", "blue", "pink"],
   animation: ["off", "subtle", "normal"],
   paper: ["a4", "80", "58"],
+  quoteCategory: ["mixed", "faith", "motivation"],
 };
 const booleans = [
   "reduceMotion",
+  "floatingPhoto", "ambientGlow", "hoverEffects", "pageTransitions",
+  "showQuotes", "autoRotateQuotes",
   "confirmBeforeFinish",
   "showCalculation",
   "allowNotes",
@@ -69,6 +80,7 @@ export function normalizePreferences(value = {}) {
     ["marginA4", 8, 25],
     ["marginThermal", 2, 6],
     ["maxBatchFiles", 1, 10],
+    ["quoteInterval", 8, 60],
   ])
     if (Number.isFinite(Number(value[key])))
       result[key] = Math.min(

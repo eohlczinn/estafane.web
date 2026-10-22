@@ -8,9 +8,6 @@ import {
   parseCookies,
   buildSessionCookie,
   buildClearCookie,
-  checkRateLimit,
-  registerFailedAttempt,
-  clearRateLimit,
   SESSION_COOKIE_NAME,
 } from "../server/services/authService.js";
 import { isAllowedOrigin } from "../server/services/originValidator.js";
@@ -95,26 +92,6 @@ describe("Serviço de Autenticação e Segurança (authService)", () => {
     expect(clearCookie).toContain("HttpOnly");
   });
 
-  it("bloqueia tentativas repetidas de login após 5 falhas (Rate Limiting)", () => {
-    const testIp = "192.168.10.50";
-    clearRateLimit(testIp);
-
-    for (let i = 0; i < 4; i++) {
-      registerFailedAttempt(testIp);
-      expect(checkRateLimit(testIp).blocked).toBe(false);
-    }
-
-    // 5ª tentativa bloqueia
-    registerFailedAttempt(testIp);
-    const limitResult = checkRateLimit(testIp);
-    expect(limitResult.blocked).toBe(true);
-    expect(limitResult.waitMinutes).toBeGreaterThan(0);
-    expect(limitResult.message).toContain("Muitas tentativas");
-
-    // Limpeza por sucesso
-    clearRateLimit(testIp);
-    expect(checkRateLimit(testIp).blocked).toBe(false);
-  });
 });
 
 describe("Validador de Origem e Domínio Railway (originValidator)", () => {
@@ -172,6 +149,24 @@ describe("Endpoints de Autenticação e Proteção da API (/api/auth e /api/fech
     expect(res.status).toBe(401);
     const data = await res.json();
     expect(data.error).toContain("incorretos");
+  });
+
+  it("permite login correto imediatamente após várias senhas erradas, sem espera de 15 minutos", async () => {
+    const original = process.env.ADMIN_PASSWORD;
+    process.env.ADMIN_PASSWORD = "senha-de-teste-sem-bloqueio";
+    const login = (password) => fetch(`${baseUrl}/api/auth/login`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "estefane", password }),
+    });
+    try {
+      for (let i = 0; i < 8; i++) expect((await login("incorreta")).status).toBe(401);
+      const correct = await login("senha-de-teste-sem-bloqueio");
+      expect(correct.status).toBe(200);
+      expect(correct.headers.get("set-cookie")).toContain("HttpOnly");
+    } finally {
+      if (original === undefined) delete process.env.ADMIN_PASSWORD;
+      else process.env.ADMIN_PASSWORD = original;
+    }
   });
 
   it("probe do Railway funciona sem sessão e não libera a API protegida", async () => {

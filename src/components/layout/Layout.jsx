@@ -25,6 +25,8 @@ import {
 import { useClosing } from "../../context/ClosingContext.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
+import { estefaneProfile } from "../../services/profile.js";
+
 const links = [
   ["/", "Início", House],
   ["/ler-pdf", "Ler PDF", FileText],
@@ -76,8 +78,8 @@ export default function Layout({ children }) {
             </NavLink>
           ))}
         </nav>
-        <div className="sidebar-note">
-          <div className="cart-art">
+        <div className="sidebar-note living-card">
+          <div className="cart-art floating-art">
             <ShoppingCart size={65} />
             <Sparkles className="spark" size={22} />
           </div>
@@ -200,7 +202,7 @@ export default function Layout({ children }) {
                 }}
                 aria-expanded={profile}
               >
-                <img src="/estefane.jpg" alt="Estefane" />
+                <img className="living-avatar" src="/estefane.jpg" alt="Estefane" />
                 <strong>{user?.name || "Estefane"}</strong>
                 <ChevronDown size={17} />
               </button>
@@ -210,7 +212,7 @@ export default function Layout({ children }) {
                     <img src="/estefane.jpg" alt="Estefane" />
                     <div>
                       <h3>{user?.name || "Estefane"}</h3>
-                      <p>22 anos</p>
+                      <p>{estefaneProfile.age} anos</p>
                       <span>
                         <MapPin size={13} /> Águas Lindas de Goiás
                       </span>

@@ -11,9 +11,13 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react";
+import { readPreferences } from "../../services/preferences.js";
+import { useAppearance } from "../../hooks/useAppearance.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 export default function Login() {
+  const [appearance] = useState(() => readPreferences(localStorage));
+  useAppearance(appearance);
   const { login, authError, sessionExpired } = useAuth();
   const [username, setUsername] = useState("estefane");
   const [password, setPassword] = useState("");
@@ -51,7 +55,7 @@ export default function Login() {
       <div className="login-container">
         <div className="login-card">
           <div className="login-header">
-            <div className="login-avatar-wrap">
+            <div className="login-avatar-wrap living-avatar">
               <img
                 src="/estefane.jpg"
                 alt="Estefane"
@@ -163,7 +167,7 @@ export default function Login() {
             </div>
             <div className="security-item">
               <Sparkles size={16} />
-              <span>Criptografia scrypt &amp; proteção contra força bruta</span>
+              <span>Acesso pessoal e senha protegida</span>
             </div>
           </div>
         </div>
