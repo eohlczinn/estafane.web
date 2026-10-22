@@ -486,7 +486,9 @@
     }
 
     .personal-profile dl dd {
-        text-align: left
+        text-align: left;
+        max-width: none;
+        width: 100%
     }
 
     .encouragement-copy p {

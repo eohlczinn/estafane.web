@@ -47,8 +47,12 @@ const enums = {
 };
 const booleans = [
   "reduceMotion",
-  "floatingPhoto", "ambientGlow", "hoverEffects", "pageTransitions",
-  "showQuotes", "autoRotateQuotes",
+  "floatingPhoto",
+  "ambientGlow",
+  "hoverEffects",
+  "pageTransitions",
+  "showQuotes",
+  "autoRotateQuotes",
   "confirmBeforeFinish",
   "showCalculation",
   "allowNotes",
