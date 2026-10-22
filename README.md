@@ -164,3 +164,19 @@ O perfil usa os dados de `src/services/profile.js` (Estefane, 21 anos). Instagra
 As preferências de foto flutuante, brilho, hover e transição são independentes e persistem no navegador. `src/hooks/useAppearance.js` aplica o tema e o movimento no login e na área autenticada; `src/styles/personal.css` mantém os novos estilos separados do arquivo geral, usando transform e opacity, sem dependências ou animação quadro a quadro em JavaScript. A opção Sem animações e o movimento reduzido do sistema têm prioridade.
 
 `npm run dev` e `npm start` carregam `.env.railway` quando esse arquivo local existe, para usar a mesma senha configurada. O arquivo continua ignorado pelo Git e pelo upload do Railway. Em produção, as variáveis do Railway prevalecem. O login não registra tentativas nem mantém bloqueio por tempo; senha incorreta retorna 401 e permite nova tentativa imediatamente.
+
+## Alternativa gratuita: Render
+
+Serviço existente reaproveitado: `estafane.web`, ID `srv-dbbbeirbc2fs73aiu930`, em https://estafane-web.onrender.com. Ele acompanha a branch `main` deste repositório. Não é necessário criar outro serviço para esta instalação. A senha é configurada apenas nas variáveis do serviço, com hash scrypt, e o plano é Free.
+
+O `render.yaml` define um único Web Service com `plan: free`, servindo React e API Express no mesmo domínio. Usa Node 24 por `.node-version`, build com dependências de desenvolvimento (necessárias para Vite), remoção delas após o build, início `npm start` e verificação pública `/healthz`. A leitura fica limitada a um processo e um lote ativo para reduzir consumo de memória.
+
+Para uma instalação nova em outra conta, o cadastro pode ser iniciado pelo repositório:
+
+[Deploy no Render](https://render.com/deploy?repo=https://github.com/eohlczinn/estafane.web)
+
+Entre na sua conta, mantenha o plano Free e informe `ADMIN_PASSWORD` com a senha escolhida. O usuário é `estefane`. `SESSION_SECRET` é gerado automaticamente pelo Render. Nenhuma senha vai para o Blueprint ou para o Git. A configuração do Railway permanece disponível, sem exclusão de serviços.
+
+O plano gratuito possui 512 MB de RAM, entra em repouso após 15 minutos sem tráfego e pode demorar cerca de um minuto para voltar. PDFs textuais pequenos são o primeiro caso a homologar; PDFs digitalizados e OCR pesado podem exceder os recursos e precisam de validação no serviço real. Reinícios descartam resultados temporários; salve ou imprima o relatório para guardá-lo. O plano gratuito não oferece a disponibilidade de uma hospedagem de produção paga.
+
+Referências: https://render.com/docs/free e https://render.com/docs/blueprint-spec

@@ -1,0 +1,27 @@
+# Um único Web Service gratuito serve o React e a API Express.
+# Informe a senha no painel do Render; nenhum segredo fica neste arquivo.
+services:
+  - type: web
+    name: estafane.web
+    runtime: node
+    plan: free
+    repo: https://github.com/eohlczinn/estafane.web
+    branch: main
+    buildCommand: npm ci --include=dev && npm run build && npm prune --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: ADMIN_USERNAME
+        value: estefane
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ANALYSIS_CONCURRENCY
+        value: "1"
+      - key: MAX_ACTIVE_BATCHES
+        value: "1"
