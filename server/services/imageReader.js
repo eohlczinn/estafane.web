@@ -40,11 +40,12 @@ export async function readImage(bytes, format) {
   } catch {
     throw new DocumentError("Imagem corrompida ou não suportada.");
   }
-  const canvas = createCanvas(width, height),
+  const scale = Math.min(1.5, Math.sqrt(6000000 / (width * height)));
+  const canvas = createCanvas(Math.ceil(width * scale), Math.ceil(height * scale)),
     ctx = canvas.getContext("2d");
   ctx.fillStyle = "white";
-  ctx.fillRect(0, 0, width, height);
-  ctx.drawImage(image, 0, 0);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
   const result = await recognizeBuffer(canvas.toBuffer("image/png"));
   if (result.text.length > 250000)
     throw new DocumentError("Texto da imagem excede o limite de leitura.");
@@ -54,7 +55,7 @@ export async function readImage(bytes, format) {
       text: result.text,
       ocr: true,
       confidence: result.confidence,
-      lines: result.text
+      lines: result.lines || result.text
         .split(/\r?\n/)
         .map((text, i) => ({ text, line: i + 1, bounds: null })),
     },

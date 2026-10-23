@@ -1,0 +1,32 @@
+MERCADO HORIZONTE (FICTÍCIO) | DOCUMENTO DE TESTE
+RELATÓRIO DE MOVIMENTO DO CAIXA
+
+DATA: 21/10/2026 | OPERADORA: Estefane | CAIXA: 03 | TURNO: 14:00 às 22:00
+
+01 | VENDAS POR FORMA DE PAGAMENTO
+Dinheiro: 19 operações | R$ 895,40
+PIX: 31 operações | R$ 1.678,20
+Cartão de débito: 16 operações | R$ 930,50
+Cartão de crédito: 21 operações | R$ 1.150,75
+Vale-alimentação: 5 operações | R$ 235,30
+TOTAL DE VENDAS LÍQUIDAS: 92 operações | R$ 4.890,15
+
+02 | RESUMO DAS VENDAS
+Vendas brutas: R$ 5.020,15
+Cancelamentos (já descontados): R$ -130,00
+Vendas líquidas: R$ 4.890,15
+
+03 | MOVIMENTAÇÕES DO DINHEIRO FÍSICO
+Fundo de troco inicial | Entrada | R$ 180,00
+Vendas recebidas em dinheiro | Entrada | R$ 895,40
+Suprimento para o caixa | Entrada | R$ 120,00
+Sangria 01 - recolhimento | Saída | R$ 250,00
+Sangria 02 - recolhimento | Saída | R$ 200,00
+Sangria 03 - recolhimento | Saída | R$ 300,00
+
+04 | CONFERÊNCIA
+Dinheiro contado ao fim do turno: R$ 452,05
+
+OBSERVAÇÃO: os cancelamentos já foram descontados das vendas líquidas.
+IMPORTANTE: saldo esperado e diferença foram omitidos para o sistema calcular.
+DADOS FICTÍCIOS | NÃO USAR COMO FECHAMENTO OFICIAL

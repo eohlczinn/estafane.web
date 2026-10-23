@@ -194,7 +194,7 @@ describe("Parser conservador", () => {
         text: "Supermercado Pingo De Ouro\nNome da operadora: Ana  Maria",
       },
     ]).fields;
-    expect(f.market.value).toBe("Pingo De Ouro");
+    expect(f.market.value).toBe("Supermercado Pingo De Ouro");
     expect(f.operator.value).toBe("Ana  Maria");
   });
 });

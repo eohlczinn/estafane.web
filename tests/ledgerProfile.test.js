@@ -28,7 +28,7 @@ it("calcula outros valores sem fixar o resultado do exemplo", () => {
   expect(reconcile(p).calculation).toMatchObject({ expected: 74075, difference: 1000, result: "over" });
 });
 it("não presume devolução zero sem extrato delimitado ou com saída desconhecida", () => {
-  for (const text of [fixture.replace("03 | CONFERÊNCIA INFORMADA PELA OPERADORA", "Conferência"),
+  for (const text of [fixture.replace("03 | CONFERÊNCIA INFORMADA PELA OPERADORA", "Observações"),
     fixture.replace("Sangria 02 - recolhimento", "Saída especial"),
     fixture.replace("03 | CONFERÊNCIA", "Saída especial\tSaída\tR$ 40\n03 | CONFERÊNCIA")]) {
     expect(parse(text).fields.refunds.value).toBeNull();

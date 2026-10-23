@@ -34,9 +34,9 @@ export async function readPDF(buffer, onProgress = () => {}) {
       }
       if (needsOCR) {
         const scanned = await recognizePage(page);
-        if (scanned.trim().length > text.trim().length || !text.trim()) {
-          text = scanned;
-          lines = scanned.split(/\r?\n/).map((text, index) => ({
+        if (scanned.text.trim().length > text.trim().length || !text.trim()) {
+          text = scanned.text;
+          lines = scanned.lines || scanned.text.split(/\r?\n/).map((text, index) => ({
             text,
             line: index + 1,
             bounds: null,

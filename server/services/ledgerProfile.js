@@ -1,5 +1,6 @@
 import { normalize } from "./parserRules.js";
 import { moneyTokens } from "./movementExtractor.js";
+import { sectionKind } from './documentStructure.js';
 
 // Bounded cash ledgers enumerate physical movements. Missing categories outside
 // this profile remain unknown; a generic PDF must never silently default to zero.
@@ -17,6 +18,9 @@ export function reconcileLedgerProfile({
     documentId,
     page: line.page,
     line: line.line,
+    sheet: line.sheet,
+    cell: line.cells?.map(c=>c.cell).filter(Boolean).join(', ') || null,
+    original: line.originalText || line.text,
     bounds: line.bounds || null,
     text: line.text,
     profile: "extrato-movimentacao",
@@ -57,24 +61,15 @@ export function reconcileLedgerProfile({
       unparsedLines.splice(i, 1);
     }
   }
-  const start = lines.findIndex((l) =>
-    /^(?:\d+\s*\|\s*)?movimentacoes do dinheiro fisico$/.test(
-      normalize(l.text),
-    ),
-  );
+  const start = lines.findIndex(l => l.section === 'physical' || sectionKind(l.text) === 'physical');
   const end = lines.findIndex(
     (l, i) =>
       i > start &&
-      /^(?:\d+\s*\|\s*)?conferencia informada pela operadora$/.test(
-        normalize(l.text),
-      ),
+      (l.section === 'count' || sectionKind(l.text) === 'count'),
   );
   if (
     start < 0 ||
-    end <= start ||
-    !lines.some((l) =>
-      /^extrato de movimentacao do caixa$/.test(normalize(l.text)),
-    )
+    end <= start
   )
     return;
   const rows = lines

@@ -1,113 +1,72 @@
-import { moneyRules, infoRules, normalize } from "./parserRules.js";
-import { allFields } from "../../shared/fields.js";
-const metadataHeaders = {data:"date",operador:"operator",operadora:"operator",caixa:"register",pdv:"register",turno:"shift",horario:"shift",estabelecimento:"market",empresa:"market",vendas:"sales",total:"sales"};
-const exactHeaders = { ...Object.fromEntries(Object.entries(allFields).map(([key,label]) => [normalize(label),key])), ...metadataHeaders,
-  dinheiro:"cash",especie:"cash",numerario:"cash","vendas em dinheiro":"cash","vendas liquidas":"sales",debito:"debit",credito:"credit",sangria:"withdrawals",sangrias:"withdrawals",suprimento:"supplies",suprimentos:"supplies",devolucoes:"refunds","forma de pagamento":null };
-const fieldFor = (text) =>
-  (Object.hasOwn(exactHeaders,normalize(text)) ? exactHeaders[normalize(text)] : null) || Object.entries({ ...infoRules, ...moneyRules }).find(([, rule]) =>
-    rule.test(normalize(text)),
-  )?.[0];
-const exactValueHeader =
-  /^(?:valor(?: total| liquido)?|total|montante|saldo|recebido|r\$)$/;
-const exactLabelHeader =
-  /^(?:descricao|movimento|movimentacao|historico|forma(?: de pagamento)?|pagamento|tipo|modalidade)$/;
-const captions = allFields;
-// Convert table columns to labelled observations, retaining the original cell coordinates.
-// This adapter never sums money and never guesses an unknown financial column.
+import { moneyRules, infoRules, normalize } from './parserRules.js';
+import { allFields } from '../../shared/fields.js';
+import { metadataHeaders, rowCells, sectionKind } from './documentStructure.js';
+const exactHeaders = {...Object.fromEntries(Object.entries(allFields).map(([k,v])=>[normalize(v),k])),...metadataHeaders,
+  vendas:'sales',total:'sales',dinheiro:'cash',especie:'cash',numerario:'cash','vendas em dinheiro':'cash','vendas liquidas':'sales',
+  debito:'debit',credito:'credit',sangria:'withdrawals',sangrias:'withdrawals',suprimento:'supplies',suprimentos:'supplies',devolucoes:'refunds'};
+const fieldFor = text => (Object.hasOwn(exactHeaders,normalize(text)) ? exactHeaders[normalize(text)] : null) || Object.entries({...infoRules,...moneyRules}).find(([,r])=>r.test(normalize(text)))?.[0];
+const valueHeader = /^(?:valor(?: total| liquido| recebido)?(?:\s*\(r\$\))?|total|montante|saldo|recebido|r\$)$/;
+const labelHeader = /^(?:descricao|movimento|movimentacao|historico|forma(?: de pagamento)?|pagamento|modalidade|informacao)$/;
+const quantityHeader = /^(?:quantidade|qtd\.?|qtdade|numero|n[ºo])$/;
+const hasAmount = c => c.numeric || /\d[,\.]\d{2}\b/.test(c.text);
+const valueFor = (field,c) => ['register','shift'].includes(field) && c.numeric ? String(c.raw) : c.text.trim();
+
+// Normalize observations, not amounts. Keep direction, section and original
+// evidence together for reconciliation across summaries and detailed ledgers.
 export function interpretTables(pages) {
-  return pages.map((page) => {
-    let header = null,
-      mode = null;
-    const lines = [];
-    for (const row of page.lines || page.text.split(/\r?\n/).map((text,i) => ({text,line:i+1}))) {
-      if (!row.cells || row.cells.length < 2) {
-        lines.push(row);
-        continue;
+  return pages.map(page => {
+    let header=null,mode=null,section=null;
+    const lines=[],rows=page.lines || page.text.split(/\r?\n/).map((text,i)=>({text,line:i+1}));
+    const emit=(row,text,cells,extra={})=>lines.push({...row,text,originalText:row.originalText||row.text,cells,sheet:page.sheet,section,...extra});
+    const metadata=(row,field,cell,column) => {
+      const value=valueFor(field,cell);
+      if(field==='operatorRegister') {
+        const m=value.match(/^(.+?)\s*[|/]\s*(?:caixa|pdv)\s*[:=]?\s*(\S+)$/i);
+        if(!m) {emit(row,value,[cell],{column});return;}
+        emit(row,`Operadora: ${m[1].trim()}`,[cell],{column});
+        emit(row,`Caixa: ${m[2]}`,[cell],{column:column+100});return;
       }
-      const nonempty = row.cells
-        .map((c, i) => ({ ...c, index: i }))
-        .filter((c) => c.text.trim() || c.unsafe);
-      const norms = row.cells.map((c) => normalize(c.text));
-      const valueColumn = norms.findIndex((n) => exactValueHeader.test(n));
-      const labelColumn = norms.findIndex((n) => exactLabelHeader.test(n));
-      const known = nonempty.filter((c) => Object.hasOwn(exactHeaders,normalize(c.text)) && exactHeaders[normalize(c.text)]);
-      const hasValue = nonempty.some(
-        (c) => c.numeric || /\d[,\.]\d{2}\b/.test(c.text),
-      );
-      if (!hasValue && valueColumn >= 0 && labelColumn >= 0) {
-        header = { valueColumn, labelColumn, ignored: norms.flatMap((n,i) => /^(?:quantidade|qtd\.?|qtdade|numero|n[ºo])$/.test(n) ? [i] : []) };
-        mode = "records";
-        continue;
+      emit(row,`${field === 'shift' ? 'Turno' : allFields[field]}: ${value}`,[cell],{column});
+    };
+    for(let index=0;index<rows.length;index++) {
+      const row=rows[index],cells=rowCells(row),nonempty=cells.map((c,i)=>({...c,index:i})).filter(c=>c.text.trim()||c.unsafe),norms=cells.map(c=>normalize(c.text));
+      const kind=sectionKind(row.text.replace(/\t/g,' '));
+      if(kind) {section=kind;mode=null;header=null;emit(row,row.text,cells);continue;}
+      const metadataOnly=nonempty.length && nonempty.every(c=>metadataHeaders[normalize(c.text)]);
+      const next=rows[index+1],nextCells=next&&rowCells(next);
+      if(metadataOnly && nextCells && nonempty.every(c=>nextCells[c.index]?.text.trim() && !metadataHeaders[normalize(nextCells[c.index].text)])) {
+        for(const c of nonempty) metadata(next,metadataHeaders[normalize(c.text)],nextCells[c.index],c.index+1);
+        index++;continue;
       }
-      if (!hasValue && known.length >= 2 && known.length === nonempty.length) {
-        header = row.cells;
-        mode = "columns";
-        continue;
+      if(metadataOnly) {emit(row,row.text,cells,{metadataHeader:true});continue;}
+      const valueColumn=norms.findIndex(n=>valueHeader.test(n)),labelColumn=norms.findIndex(n=>labelHeader.test(n));
+      const hasValue=nonempty.some(hasAmount);
+      if(!hasValue && valueColumn>=0 && labelColumn>=0) {
+        header={valueColumn,labelColumn,type:norms.indexOf('tipo'),section:norms.findIndex(n=>n==='secao'),
+          ignored:norms.flatMap((n,i)=>quantityHeader.test(n)?[i]:[]),metadata:norms.flatMap((n,i)=>metadataHeaders[n]?[{field:metadataHeaders[n],index:i}]:[])};
+        mode='records';continue;
       }
-      const emit = (text, cells, extra = {}) =>
-        lines.push({
-          ...row,
-          ...extra,
-          text,
-          originalText: row.text,
-          cells,
-          sheet: page.sheet,
-        });
-      if (mode === "columns" && nonempty.length === 2 && fieldFor(nonempty[0].text) && (nonempty[1].numeric || /\d,\d{2}\b/.test(nonempty[1].text))) {
-        mode = null;
-        emit(`${nonempty[0].text}: ${nonempty[1].text}`,row.cells);
-      } else if (mode === "columns" && hasValue) {
-        row.cells.forEach((cell, i) => {
-          const label = header[i]?.text,
-            field = label && fieldFor(label);
-          if (!cell.text.trim() && !cell.unsafe) return;
-          if (!field) {
-            emit(cell.text, [cell], { column: i + 1 });
-            return;
-          }
-          const value =
-            ["register", "shift"].includes(field) && cell.numeric
-              ? String(cell.raw)
-              : cell.text;
-          emit(`${captions[field] || label}: ${value}`, [cell], {
-            column: i + 1,
-          });
-        });
-      } else if (
-        mode === "records" &&
-        hasValue &&
-        row.cells[header.labelColumn]?.text.trim()
-      ) {
-        const label = row.cells[header.labelColumn],
-          cell = row.cells[header.valueColumn];
-        emit(
-          `${label.text}: ${cell?.text || ""}`,
-          [label, cell].filter(Boolean),
-          { column: header.valueColumn + 1 },
-        );
-        // Additional nonempty financial columns are not silently discarded.
-        row.cells.forEach((c, i) => {
-          if (
-            ![header.labelColumn, header.valueColumn].includes(i) &&
-            !/^(?:quantidade|qtd\.?|qtdade|numero|n[ºo])$/.test(norms[i] || "") &&
-            !header.ignored?.includes(i) && /\d,\d{2}\b/.test(c.text)
-          )
-            emit(c.text, [c], { column: i + 1 });
-        });
-      } else {
-        // Label/value metadata, including numeric register identifiers.
-        const first = nonempty[0],
-          field = first && fieldFor(first.text);
-        if (
-          field &&
-          nonempty.length === 2 &&
-          ["register", "shift"].includes(field) &&
-          nonempty[1].numeric
-        )
-          emit(`${first.text}: ${nonempty[1].raw}`, row.cells);
-        else lines.push({ ...row, sheet: page.sheet });
+      const known=nonempty.filter(c=>Object.hasOwn(exactHeaders,normalize(c.text)) && exactHeaders[normalize(c.text)]);
+      if(!hasValue && known.length>=2 && known.length===nonempty.length) {header=cells;mode='columns';continue;}
+      if(mode==='columns' && nonempty.length===2 && fieldFor(nonempty[0].text) && hasAmount(nonempty[1])) mode=null;
+      if(mode==='columns' && hasValue) {
+        cells.forEach((c,i)=>{if(!c.text.trim()&&!c.unsafe)return;const field=fieldFor(header[i]?.text||'');
+          if(field) metadata(row,field,c,i+1);else emit(row,c.text,[c],{column:i+1});});continue;
       }
+      if(mode==='records' && hasValue && cells[header.labelColumn]?.text.trim()) {
+        const label=cells[header.labelColumn],value=cells[header.valueColumn],type=cells[header.type];
+        const recordSection=header.section>=0?sectionKind(cells[header.section]?.text||''):section;
+        if(value?.text.trim()||value?.unsafe) {
+          emit(row,`${label.text}: ${type?.text ? type.text+' | ' : ''}${value.text}`,[label,type,value].filter(Boolean),{column:header.valueColumn+1,section:recordSection});
+          for(const m of header.metadata) if(cells[m.index]?.text.trim()) metadata(row,m.field,cells[m.index],m.index+1);
+          const consumed=new Set([header.labelColumn,header.valueColumn,header.type,header.section,...header.ignored,...header.metadata.map(m=>m.index)]);
+          cells.forEach((c,i)=>{if(!consumed.has(i)&&hasAmount(c))emit(row,c.text,[c],{column:i+1,section:recordSection});});continue;
+        }
+      }
+      const first=nonempty[0],field=first&&metadataHeaders[normalize(first.text)];
+      if(field && nonempty.length===2) metadata(row,field,nonempty[1],nonempty[1].index+1);
+      else emit(row,row.text,cells);
     }
-    return { ...page, lines };
+    return {...page,lines};
   });
 }

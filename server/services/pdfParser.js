@@ -4,6 +4,7 @@ import { movementTotals, movementTypes, sumCents } from "../../shared/movements.
 import { normalize, moneyRules, infoRules, layoutLine } from "./parserRules.js";
 import { reconcileLedgerProfile } from "./ledgerProfile.js";
 import { interpretTables } from "./tableInterpreter.js";
+import { reconcilePaymentSection } from './paymentProfile.js';
 import { createHash } from "node:crypto";
 import { validateImportProfiles } from "../../shared/importProfiles.js";
 import {
@@ -50,7 +51,7 @@ export function parsePages(
         page: p.page,
         sheet: p.sheet,
         ocr: p.ocr,
-        confidence: p.confidence,
+        confidence: l.confidence ?? p.confidence,
         id: `${p.page}:${l.line}:${l.column || 0}:${cell}`,
       }));
     }),
@@ -92,7 +93,7 @@ export function parsePages(
   const identity = { closingReference: null, reportType: null };
   const reportTitles = [
     [/^(?:relacao de )?vendas (?:agrupadas )?por dia\b/,"Vendas por dia"],
-    [/^(?:extrato de movimentacao|movimento diario|movimentacoes) (?:do |de )?caixa\b/,"Movimentação física de caixa"],
+    [/^(?:extrato de movimentacao|relatorio de movimento|movimento diario|movimentacoes) (?:do |de )?caixa\b/,"Movimentação física de caixa"],
     [/^fechamento (?:de |do )?operador/,"Fechamento de operador"],
     [/^resumo (?:de |das )?vendas\b/,"Resumo de vendas"],
     [/^extrato (?:de |dos )?pagamentos\b/,"Extrato de pagamentos"],
@@ -106,10 +107,17 @@ export function parsePages(
     if (found) { identity.reportType = found[1]; break; }
   }
   const explicitMarket = lines.some((l) =>
-    /^estabelecimento\s/.test(normalize(l.text)),
+    /^estabelecimento\s*[:=\s]/.test(normalize(l.text)),
   );
   for (const line of lines) {
-    const original = line.text,
+    let original = line.text;
+    // An unlabelled establishment banner keeps its complete name. A labelled
+    // metadata card takes precedence over a decorative document banner.
+    if (/^(?:mercado|supermercado)\s+[^:=]+/i.test(original) && !/^(?:mercado|supermercado)\s*[:=]/i.test(original)) {
+      if (explicitMarket) continue;
+      original = 'Estabelecimento: ' + original.split(/[|\t]/)[0].trim();
+    }
+    const
       clean = layoutLine(original),
       n = normalize(clean);
     const source = {
@@ -124,6 +132,7 @@ export function parsePages(
         line.cells
           ?.filter((c) => c.text || c.unsafe)
           .map((c) => c.cell)
+          .filter(Boolean)
           .join(", ") || null,
       original: line.originalText || original,
       hidden: !!line.hidden,
@@ -150,7 +159,7 @@ export function parsePages(
       identity.reportType = clean.split(/[:=]/).slice(1).join(":").trim();
       continue;
     }
-    if (extracted.consumed.has(line.id) || !clean) continue;
+    if (extracted.consumed.has(line.id) || line.metadataHeader || !clean) continue;
     // Metadata columns may be separated by coordinates/tabs without colons.
     const header = Object.values(infoRules).some((rule) => rule.test(n))
       ? clean.split(
@@ -205,6 +214,7 @@ export function parsePages(
           const time = cell.match(/\b(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?\b/);
           if (time) assign("shift", time[0], source);
         }
+        if (key !== 'date') value = value.replace(/[|\t]\s*$/, '').trim();
         assign(key, value, source);
         info = true;
         break;
@@ -370,6 +380,7 @@ export function parsePages(
     assign,
     documentId,
   });
+  reconcilePaymentSection({lines,fields,assign,extractionIssues,documentId});
   // Profile-recognized lines no longer need a generic extraction warning.
   const unknownSources = new Set(
     unparsedLines.map((l) => `${l.source.page}:${l.source.line}`),

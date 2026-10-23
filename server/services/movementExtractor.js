@@ -110,6 +110,7 @@ export function extractMovements(lines, documentId) {
         line.cells
           ?.filter((c) => c.text || c.unsafe)
           .map((c) => c.cell)
+          .filter(Boolean)
           .join(", ") || null,
       original: line.originalText || line.text,
       hidden: !!line.hidden,
