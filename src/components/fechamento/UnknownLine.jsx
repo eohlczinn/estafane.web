@@ -47,6 +47,7 @@ export default function UnknownLine({ issue }) {
           </option>
         </select>
       </label>
+      {mode && mode!=='informational' && line.suggestions?.filter(s=>mode==='total'||Object.values(movementTypes).some(m=>m.field===s.field)).map(s=><div className="category-suggestion" key={s.field}><p>{s.reason}</p><button className="secondary" type="button" onClick={()=>setField(s.field)}>Sugerido: {moneyFields[s.field]}</button></div>)}
       {mode && mode !== "informational" && (
         <>
           <label>

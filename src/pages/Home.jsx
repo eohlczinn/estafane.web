@@ -22,6 +22,7 @@ import Upload from "../components/upload/Upload.jsx";
 import Review from "../components/fechamento/Review.jsx";
 import DocumentSource from "../components/fechamento/DocumentSource.jsx";
 import Encouragement from "../components/profile/Encouragement.jsx";
+import Recommendations from '../components/profile/Recommendations.jsx';
 export default function Home({ reader = false }) {
   const { fields, rules, filename, pages, prefs } = useClosing(),
     calc = calculate(fields, rules);
@@ -67,6 +68,7 @@ export default function Home({ reader = false }) {
         </Link>
       </div>
       {!reader && <Encouragement prefs={prefs} compact />}
+      {!reader && <Recommendations />}
       <div className="stats-grid">
         {[
           [

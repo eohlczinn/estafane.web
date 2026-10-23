@@ -18,8 +18,10 @@ import {
 } from "../services/report.js";
 import PaperFormats from "../components/printing/PaperFormats.jsx";
 import { reportFilename } from "../services/preferences.js";
+import {useExperience} from '../context/experience.js';
 export default function Report({ printPage = false }) {
-  const { closing, batch, prefs, setNotice } = useClosing(),
+  const {record}=useExperience();
+  const { closing, batch, prefs, setNotice, saveImportProfile } = useClosing(),
     [modal, setModal] = useState(printPage),
     [paper, setPaper] = useState(prefs.paper),
     [zoom, setZoom] = useState(100),
@@ -124,6 +126,7 @@ export default function Report({ printPage = false }) {
             : individualFilename(closing, prefs, paper, generated),
         );
       setNotice("PDF gerado e enviado para download no navegador.");
+      record('workflow','export');
     } catch {
       setNotice(
         "Não foi possível gerar o relatório. Confira o formato e o logotipo configurados.",
@@ -243,6 +246,7 @@ export default function Report({ printPage = false }) {
           </p>
         </div>
       </div>
+      {confirmed && scope==='individual' && closing.profileCorrections?.length>0 && <section className="panel learning-card"><h2>Guarde o que você ensinou</h2><p>As classificações conferidas podem virar sugestões no próximo arquivo do mesmo layout. Valores não são memorizados.</p><button className="secondary" onClick={()=>{if(saveImportProfile())record('workflow','learn');}}>Salvar aprendizado deste layout</button></section>}
       {!confirmed && (
         <div className="print-pending-notice">
           <div>

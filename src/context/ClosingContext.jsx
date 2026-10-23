@@ -4,6 +4,7 @@ import {
   readPreferences,
   writePreferences,
   normalizePreferences,
+  resolvePerformance,
 } from "../services/preferences.js";
 import { useAppearance } from "../hooks/useAppearance.js";
 import { reconcile } from "../../shared/reconciliation.js";
@@ -120,6 +121,7 @@ export function ClosingProvider({ children }) {
   useEffect(() => {
     let stopped = false;
     async function check() {
+      if (document.hidden && prefs.pauseWhenHidden) return;
       try {
         const response = await fetch("/api/health", {
             signal: AbortSignal.timeout(5000),
@@ -140,12 +142,16 @@ export function ClosingProvider({ children }) {
       }
     }
     check();
-    const timer = setInterval(check, 15000);
+    const interval = resolvePerformance(prefs,navigator) === 'eco' ? Math.max(60,prefs.healthInterval) : prefs.healthInterval;
+    const timer = setInterval(check, interval * 1000);
+    const visible = () => { if(!document.hidden) check(); };
+    document.addEventListener('visibilitychange',visible);
     return () => {
       stopped = true;
       clearInterval(timer);
+      document.removeEventListener('visibilitychange',visible);
     };
-  }, []);
+  }, [prefs.performance,prefs.healthInterval,prefs.pauseWhenHidden]);
   function mutate(fn, record = true) {
     const apply = (old) =>
       audited(record ? rememberChange(old, fn(old)) : fn(old));
@@ -289,7 +295,7 @@ export function ClosingProvider({ children }) {
         saveImportProfile: () => {
           if (!closing.confirmed || !audit.canConfirm) {
             setNotice("Confirme o fechamento antes de salvar o perfil.");
-            return;
+            return false;
           }
           try {
             const profiles = readImportProfiles(localStorage);
@@ -319,10 +325,12 @@ export function ClosingProvider({ children }) {
             setNotice(
               "Perfil salvo neste navegador. Sugestões só serão usadas no mesmo layout e continuarão exigindo conferência.",
             );
+            return true;
           } catch {
             setNotice(
               "Não foi possível salvar o perfil. Limite de 20 layouts ou armazenamento indisponível.",
             );
+            return false;
           }
         },
         setRules: (value) =>

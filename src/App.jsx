@@ -1,4 +1,4 @@
-import React from "react";
+import React, {lazy, Suspense} from "react";
 import { Routes, Route } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
@@ -6,10 +6,11 @@ import { ClosingProvider } from "./context/ClosingContext.jsx";
 import Layout from "./components/layout/Layout.jsx";
 import Login from "./components/auth/Login.jsx";
 import Home from "./pages/Home.jsx";
-import Report from "./pages/Report.jsx";
-import Settings from "./pages/Settings.jsx";
-import Profile from "./pages/Profile.jsx";
-import Support from "./pages/Support.jsx";
+import { ExperienceProvider } from './context/ExperienceContext.jsx';
+const Report=lazy(()=>import('./pages/Report.jsx'));
+const Settings=lazy(()=>import('./pages/Settings.jsx'));
+const Profile=lazy(()=>import('./pages/Profile.jsx'));
+const Support=lazy(()=>import('./pages/Support.jsx'));
 import Results from "./pages/Results.jsx";
 import BatchResults from "./pages/BatchResults.jsx";
 
@@ -37,7 +38,9 @@ function AppContent() {
 
   return (
     <ClosingProvider>
+      <ExperienceProvider>
       <Layout>
+        <Suspense fallback={<div className="route-loading" role="status">Preparando seu espaço…</div>}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/ler-pdf" element={<Home reader />} />
@@ -50,7 +53,9 @@ function AppContent() {
           <Route path="/suporte" element={<Support />} />
           <Route path="*" element={<Home />} />
         </Routes>
+        </Suspense>
       </Layout>
+      </ExperienceProvider>
     </ClosingProvider>
   );
 }

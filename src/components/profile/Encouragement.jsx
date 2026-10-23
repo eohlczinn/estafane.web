@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Heart, Sparkles, Pause, Play, ArrowRight } from "lucide-react";
+import { resolvePerformance } from '../../services/preferences.js';
+import {useExperience} from '../../context/experience.js';
 
 const messages = [
   ["faith", "Que Deus ilumine seus passos e traga paz ao seu coração."],
@@ -22,6 +24,8 @@ const messages = [
 ];
 
 export default function Encouragement({ prefs, compact = false }) {
+  const experience=useExperience();
+  const [liked,setLiked]=useState('');
   const [index, setIndex] = useState(0),
     [paused, setPaused] = useState(false);
   const [visible, setVisible] = useState(() => !document.hidden);
@@ -37,6 +41,7 @@ export default function Encouragement({ prefs, compact = false }) {
     prefs.autoRotateQuotes &&
     prefs.animation !== "off" &&
     !prefs.reduceMotion &&
+    resolvePerformance(prefs,navigator) !== 'eco' &&
     !reduced;
   useEffect(() => {
     const media = matchMedia("(prefers-reduced-motion: reduce)");
@@ -88,6 +93,7 @@ export default function Encouragement({ prefs, compact = false }) {
           · {position + 1}/{selected.length}
         </span>
         <div>
+          <button type="button" aria-pressed={liked===`${prefs.quoteCategory}-${position}`} aria-label="Gostei deste estilo de frase" onClick={()=>{setLiked(`${prefs.quoteCategory}-${position}`);experience?.record('quotes',selected[position][0]);}}><Heart size={15}/></button>
           {canRotate && (
             <button
               type="button"

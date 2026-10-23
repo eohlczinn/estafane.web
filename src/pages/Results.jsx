@@ -8,6 +8,7 @@ import { formatMoney } from "../../shared/money.js";
 import { statusLabels } from "../services/report.js";
 import Review from "../components/fechamento/Review.jsx";
 import DocumentSource from "../components/fechamento/DocumentSource.jsx";
+import SimpleResult from '../components/fechamento/SimpleResult.jsx';
 export default function Results() {
   const { fields, filename, audit, confirmed, batch } = useClosing(),
     calc = audit.calculation;
@@ -45,6 +46,7 @@ export default function Results() {
           <strong>{formatMoney(calc.difference)}</strong>
         </div>
       </div>
+      <SimpleResult />
       {batch && (
         <Link className="secondary back-batch" to="/lote">
           Voltar aos fechamentos do lote

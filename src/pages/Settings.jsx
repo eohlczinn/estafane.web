@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import {useLocation} from 'react-router-dom';
 import {
   Settings as SettingsIcon,
   Palette,
@@ -18,6 +19,8 @@ import PaperFormats from "../components/printing/PaperFormats.jsx";
 import { useClosing } from "../context/ClosingContext.jsx";
 import { estefaneProfile } from "../services/profile.js";
 import ImportProfiles from "../components/upload/ImportProfiles.jsx";
+import ExperienceSettings from '../components/profile/ExperienceSettings.jsx';
+import {useExperience} from '../context/experience.js';
 function Toggle({ label, checked, onChange, description }) {
   return (
     <label className="settings-toggle">
@@ -70,9 +73,12 @@ function MarginInput({ label, min, max, value, onChange }) {
   );
 }
 export default function Settings() {
+  const location=useLocation();
+  useEffect(()=>{if(location.hash)document.getElementById(location.hash.slice(1))?.scrollIntoView({block:'start'});},[location.hash]);
+  const {record}=useExperience();
   const { prefs, setPrefs, serverLimits } = useClosing(),
     [error, setError] = useState("");
-  const set = (key, value) => setPrefs({ ...prefs, [key]: value });
+  const set = (key, value) => {setPrefs(old=>({ ...old, [key]: value }));if(key==='accent')record('accent',value);if(key==='quoteCategory')record('quotes',value);};
   async function logo(event) {
     const file = event.target.files[0];
     event.target.value = "";
@@ -127,6 +133,9 @@ export default function Settings() {
         {[
           ["aparencia", "Aparência"],
           ["efeitos", "Movimento e frases"],
+          ["estilos", "Estilos"],
+          ["otimizacao", "Otimização"],
+          ["personalizacao", "Personalização"],
           ["mercado", "Mercado"],
           ["fechamento", "Fechamento"],
           ["processamento", "Documentos e lotes"],
@@ -171,6 +180,7 @@ export default function Settings() {
               ["purple", "Roxo"],
               ["blue", "Azul"],
               ["pink", "Rosa"],
+              ["emerald", "Esmeralda"], ["teal", "Turquesa"], ["amber", "Âmbar"], ["coral", "Coral"],
             ].map(([key, label]) => (
               <button
                 key={key}
@@ -277,6 +287,7 @@ export default function Settings() {
             </p>
           )}
         </Section>
+        <ExperienceSettings />
         <Section id="mercado" title="Mercado" Icon={Store}>
           <label>
             Nome do estabelecimento
@@ -341,6 +352,7 @@ export default function Settings() {
           )}
         </Section>
         <Section id="fechamento" title="Fechamento" Icon={Calculator}>
+          <Toggle label="Explicar o resultado em palavras simples" checked={prefs.simpleResult} onChange={v=>set('simpleResult',v)} description="Mostra quanto deveria estar no caixa, quanto foi contado e o próximo passo."/>
           <Toggle
             label="Solicitar confirmação antes de finalizar"
             checked={prefs.confirmBeforeFinish}

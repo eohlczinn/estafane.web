@@ -14,8 +14,12 @@ const valueFor = (field,c) => ['register','shift'].includes(field) && c.numeric 
 // Normalize observations, not amounts. Keep direction, section and original
 // evidence together for reconciliation across summaries and detailed ledgers.
 export function interpretTables(pages) {
+  let continuation=null;
   return pages.map(page => {
-    let header=null,mode=null,section=null;
+    // Continue a physical PDF table on the next page. Sheet boundaries and new
+    // explicit metadata never inherit a previous table's column meaning.
+    const prior=!page.sheet && continuation?.page===page.page-1 ? continuation : null;
+    let header=prior?.header||null,mode=prior?.mode||null,section=prior?.section||null;
     const lines=[],rows=page.lines || page.text.split(/\r?\n/).map((text,i)=>({text,line:i+1}));
     const emit=(row,text,cells,extra={})=>lines.push({...row,text,originalText:row.originalText||row.text,cells,sheet:page.sheet,section,...extra});
     const metadata=(row,field,cell,column) => {
@@ -64,9 +68,10 @@ export function interpretTables(pages) {
         }
       }
       const first=nonempty[0],field=first&&metadataHeaders[normalize(first.text)];
-      if(field && nonempty.length===2) metadata(row,field,nonempty[1],nonempty[1].index+1);
+      if(field && nonempty.length===2) {mode=null;header=null;metadata(row,field,nonempty[1],nonempty[1].index+1);}
       else emit(row,row.text,cells);
     }
+    continuation=!page.sheet && mode==='records' ? {page:page.page,header,mode,section} : null;
     return {...page,lines};
   });
 }

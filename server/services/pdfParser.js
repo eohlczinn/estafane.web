@@ -5,6 +5,7 @@ import { normalize, moneyRules, infoRules, layoutLine } from "./parserRules.js";
 import { reconcileLedgerProfile } from "./ledgerProfile.js";
 import { interpretTables } from "./tableInterpreter.js";
 import { reconcilePaymentSection } from './paymentProfile.js';
+import {suggestCategories} from './categorySuggestions.js';
 import { createHash } from "node:crypto";
 import { validateImportProfiles } from "../../shared/importProfiles.js";
 import {
@@ -302,7 +303,7 @@ export function parsePages(
         value: tokens.length === 1 ? tokens[0].value : null,
         label,
         layoutKey,
-        suggestions: [],
+        suggestions: suggestCategories(clean),
         reason:
           tokens.length !== 1
             ? "Há vários valores ou um valor incompleto sem coluna financeira identificada."

@@ -1,4 +1,8 @@
 export const preferenceKey = "estefane.preferences";
+export function resolvePerformance(prefs, device = {}) {
+  if(prefs.performance !== 'auto') return prefs.performance;
+  return device.connection?.saveData || (device.deviceMemory > 0 && device.deviceMemory <= 4) || (device.hardwareConcurrency > 0 && device.hardwareConcurrency <= 4) ? 'eco' : 'balanced';
+}
 export const defaultPreferences = {
   theme: "system",
   accent: "purple",
@@ -37,13 +41,28 @@ export const defaultPreferences = {
   warnDuplicates: true,
   showExtraction: true,
   autoGroup: true,
+  personalRecommendations: true,
+  learnUsage: true,
+  memoryDays: 30,
+  performance: "auto",
+  healthInterval: 30,
+  density: "comfortable",
+  fontScale: 100,
+  surface: "aurora",
+  colorDepth: "balanced",
+  pauseWhenHidden: true,
+  simpleResult: true,
 };
 const enums = {
   theme: ["light", "dark", "system"],
-  accent: ["purple", "blue", "pink"],
+  accent: ["purple", "blue", "pink", "emerald", "teal", "amber", "coral"],
   animation: ["off", "subtle", "normal"],
   paper: ["a4", "80", "58"],
   quoteCategory: ["mixed", "faith", "motivation"],
+  performance: ["auto", "eco", "balanced", "quality"],
+  density: ["comfortable", "compact"],
+  surface: ["aurora", "minimal", "mesh"],
+  colorDepth: ["soft", "balanced", "vivid"],
 };
 const booleans = [
   "reduceMotion",
@@ -68,6 +87,7 @@ const booleans = [
   "warnDuplicates",
   "showExtraction",
   "autoGroup",
+  "personalRecommendations", "learnUsage", "pauseWhenHidden", "simpleResult",
 ];
 export function normalizePreferences(value = {}) {
   const result = { ...defaultPreferences };
@@ -85,6 +105,9 @@ export function normalizePreferences(value = {}) {
     ["marginThermal", 2, 6],
     ["maxBatchFiles", 1, 10],
     ["quoteInterval", 8, 60],
+    ["memoryDays", 7, 90],
+    ["healthInterval", 15, 120],
+    ["fontScale", 90, 120],
   ])
     if (Number.isFinite(Number(value[key])))
       result[key] = Math.min(
