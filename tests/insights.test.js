@@ -15,6 +15,10 @@ it('divergência de pagamentos mantém resumo provisório e pendências explíci
   const p=explainClosing(closing(text.replace('1.150,75','1.050,75')));
   expect(p.provisional).toBe(true);expect(p.next).toContain('pendências');
   const missing=explainClosing(closing('Dinheiro: 12,00'));expect(missing.headline).toContain('faltam');
+  const manual=closing();manual.rules={...manual.rules,automatic:false,deductCancellations:true};
+  const explanation=explainClosing(manual);
+  expect(explanation.steps.find(s=>s.key==='cancellations')).toMatchObject({sign:-1,value:13000});
+  expect(explanation.cancellation).toBeNull();
 });
 it('mapeia todas as páginas, preserva origem e limita assuntos à estrutura do documento',()=>{
   const c=closing();c.pages.push({page:2,text:'02 | RESUMO DAS VENDAS\nValor desconhecido: 10,00',documentId:'outro'});

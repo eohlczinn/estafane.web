@@ -11,11 +11,11 @@ export function explainClosing(closing) {
     .filter(([key])=>f[key]?.value!=null && (key!=='refunds'||!['included','non_cash'].includes(closing.rules?.refundTreatment)))
     .map(([key,sign,label])=>({key,label,sign,value:f[key].value}));
   if(closing.rules?.cashBasis==='net')steps.splice(0,steps.length,{key:'netCash',label:'Saldo líquido declarado no documento',sign:1,value:f.netCash.value});
-  else for(const [field,policy] of [['cancellations','cancellationTreatment'],['reversals','reversalTreatment']])
-    if(closing.rules?.[policy]==='cash_out' && f[field].value!=null)steps.push({key:field,label:moneyFields[field],sign:-1,value:f[field].value});
+  else for(const [field,policy,manual] of [['cancellations','cancellationTreatment','deductCancellations'],['reversals','reversalTreatment','deductReversals']])
+    if((closing.rules?.automatic ? closing.rules[policy]==='cash_out' : closing.rules?.[manual]) && f[field].value!=null)steps.push({key:field,label:moneyFields[field],sign:-1,value:f[field].value});
   return {headline,explanation,steps,provisional:unresolved,issueCount:audit.issues.length,
     next:unresolved?`Confira ${audit.issues.length} ponto(s) abaixo. O resultado é provisório até resolver essas pendências.`:closing.confirmed?'Fechamento conferido. Você já pode salvar ou imprimir.':'Confira o documento original e confirme o fechamento para salvar ou imprimir.',
-    cancellation:closing.rules?.cancellationTreatment==='included' && f.cancellations.value>0?'Os cancelamentos já estão descontados nas vendas. Não foram subtraídos outra vez.':null};
+    cancellation:closing.rules?.cancellationTreatment==='included' && (closing.rules.automatic || !closing.rules.deductCancellations) && f.cancellations.value>0?'Os cancelamentos já estão descontados nas vendas. Não foram subtraídos outra vez.':null};
 }
 
 const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
