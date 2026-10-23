@@ -159,7 +159,7 @@ export function reportRows(fields, calc, prefs = {}) {
     rows.push(
       ["", "HISTÓRICO DE CONFERÊNCIA"],
       ...history.map((h) => [
-        h.kind,
+        ({resolution:"Esclarecimento",manual_grouping:"Associação de documentos",movement:"Correção de movimentação",classification:"Classificação manual",undo:"Alteração desfeita"})[h.kind] || "Conferência",
         h.reason || h.id || h.documentIds?.join(","),
       ]),
     );

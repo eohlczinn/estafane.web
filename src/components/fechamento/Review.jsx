@@ -90,14 +90,7 @@ function Resolution({ issue }) {
   return (
     <div className="audit-resolution">
       <p>{issue.message}</p>
-      {issue.source && (
-        <small>
-          {sourceLocation(issue.source)}
-        </small>
-      )}
-      {issue.sources?.length > 1 && <details><summary>Ver todas as origens ({issue.sources.length})</summary>
-        {issue.sources.map((source,i) => <p key={i}>{sourceLocation(source)} · {source.original || source.text}</p>)}
-      </details>}
+      {issue.source && <small>{sourceLocation(issue.source)}</small>}
       <label>
         Justificativa da conferência
         <input
@@ -266,9 +259,13 @@ export default function Review() {
           </ul>
           {audit.issues
             .filter((i) => i.resolvable)
-            .map((i) => (
-              i.unknownLineId ? <UnknownLine key={i.id} issue={i} /> : <Resolution key={i.id} issue={i} />
-            ))}
+            .map((i) =>
+              i.unknownLineId ? (
+                <UnknownLine key={i.id} issue={i} />
+              ) : (
+                <Resolution key={i.id} issue={i} />
+              ),
+            )}
         </div>
       )}
       {!audit.issues.length && (
@@ -327,8 +324,18 @@ export default function Review() {
         </button>
       </div>
       <div className="closing-export-actions">
-        <button className="secondary" disabled={!closing.undoStack?.length} onClick={undo}>Desfazer última alteração</button>
-        {confirmed && closing.profileCorrections?.length > 0 && <button className="secondary" onClick={saveImportProfile}>Salvar classificações como perfil deste layout</button>}
+        <button
+          className="secondary"
+          disabled={!closing.undoStack?.length}
+          onClick={undo}
+        >
+          Desfazer última alteração
+        </button>
+        {confirmed && closing.profileCorrections?.length > 0 && (
+          <button className="secondary" onClick={saveImportProfile}>
+            Salvar classificações como perfil deste layout
+          </button>
+        )}
         <button className="secondary" onClick={() => navigate("/imprimir")}>
           <Printer size={18} />
           Imprimir

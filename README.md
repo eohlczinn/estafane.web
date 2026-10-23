@@ -1,6 +1,10 @@
 # estefane-web
 
-Sistema de fechamento de caixa do **Pingo De Ouro**, sobre o projeto existente React + Vite, Express, PDF.js, OCR português e jsPDF. Preserva o perfil da Estefane, sidebar, temas e cores. Um PDF, vários caixas ou documentos complementares usam o mesmo motor financeiro compartilhado.
+Sistema de fechamento de caixa do **Pingo De Ouro**, sobre o projeto existente React + Vite, Express, PDF.js, OCR português e jsPDF. Preserva o perfil da Estefane, sidebar, temas e cores. PDFs, planilhas, texto e imagens usam o mesmo motor financeiro compartilhado.
+
+**Versão 1.1.0 — site ativo: https://estafane-web.onrender.com/**. A hospedagem atual é o serviço existente do Render, plano Free. A configuração Railway abaixo permanece como referência histórica/alternativa e não é o destino de publicação atual.
+
+Veja [EVOLUCAO-1.1.md](EVOLUCAO-1.1.md) para arquitetura, arquivos afetados, formatos efetivamente implementados, limites, conferência manual, perfis de layout e validação. A importação agora aceita PDF, XLSX, XLS/BIFF8, ODS, CSV, TXT, PNG e JPEG. Fórmulas e macros não são executadas; resultados armazenados de fórmulas e todo OCR exigem conferência. Compatibilidade com layouts específicos do supermercado depende de validação com arquivos reais autorizados.
 
 ## Executar
 
@@ -18,7 +22,7 @@ Produção local: `npm run build` e `npm start`, abrindo http://127.0.0.1:8787. 
 
 ## Uso
 
-1. Selecione ou arraste de 1 a 10 PDFs. Adicione outros, remova itens ou limpe a seleção. Nome, tamanho e duplicação por conteúdo ficam visíveis.
+1. Selecione ou arraste de 1 a 10 documentos suportados. Adicione outros, remova itens ou limpe a seleção. Nome, formato, tamanho e duplicação por conteúdo ficam visíveis. Falhas podem ser reenviadas sem repetir os arquivos válidos.
 2. Analise. O progresso vem do servidor: aguardando, leitura, interpretação, cálculo, auditoria e resultado individual. Sem porcentagens simuladas. É possível cancelar; sair da tela cancela a análise dessa seleção.
 3. O resultado único abre sua conferência; vários documentos abrem o dashboard do lote. Falhas individuais não impedem os demais arquivos válidos.
 4. Documentos com identidade completa e referência confiável ou turno/período compatível são associados. Operadora igual sozinha não basta. Associação incerta exige decidir entre fechamentos independentes ou documentos complementares, antes de corrigir valores.
@@ -106,7 +110,7 @@ Copie a linha `ADMIN_PASSWORD_HASH=scrypt:...` exibida no terminal e cole no pai
 | `MAX_ACTIVE_BATCHES` | 3 | 1–5 |
 | `BATCH_RETENTION_MINUTES` | 10 | 1–30 |
 
-As preferências de limite no navegador podem reduzir, nunca ampliar, o limite do servidor. Cada PDF tem no máximo 20 páginas, 250 mil caracteres extraídos e 5 mil linhas; OCR limitado a 16 milhões de pixels por página; worker com heap JS de 384 MB e timeout de 120 segundos. Memória nativa de OCR/canvas não é limitada pelo heap JS. Documentos do lote aguardam numa fila global limitada, compartilhada com o endpoint único.
+As preferências de limite no navegador podem reduzir, nunca ampliar, o limite do servidor. Cada PDF tem no máximo 20 páginas, 250 mil caracteres extraídos e 5 mil linhas; OCR limitado a 4 milhões de pixels por página; worker com heap JS de 384 MB e timeout de 120 segundos. Memória nativa de OCR/canvas não é limitada pelo heap JS. Documentos do lote aguardam numa fila global limitada, compartilhada com o endpoint único.
 
 Uploads são gravados por streaming em diretórios aleatórios na pasta temporária do sistema, sem cópias integrais de lotes na memória do Express. Arquivos individuais acima do limite são descartados e sinalizados sem impedir os demais. O tamanho total é medido durante o streaming. Arquivos são removidos após o processamento e cancelamento. Diretórios de execuções interrompidas, com mais de duas horas, são limpos na inicialização e periodicamente. Diretórios de limpeza são verificados dentro da raiz de temporários da aplicação.
 

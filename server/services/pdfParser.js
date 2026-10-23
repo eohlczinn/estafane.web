@@ -259,7 +259,8 @@ export function parsePages(
       /^(?:pagina\s+\d|pag\.?\s*\d|emitido (?:em|por)|impress[ao]o (?:em|por)|cnpj\s*[:=]|cpf\s*[:=]|telefone\s*[:=]|versao do sistema\s*[:=])/.test(
         n,
       ) || /^[-_=*\s]+$/.test(clean);
-    if (!recognized && !informational && /(?:R\$|\d,\d{2}\b)/.test(clean)) {
+    const financialContext = /\b(?:dinheiro|numerario|sangria|suprimento|pix|cartao|despesa|devolucao|estorno|cancelamento)\b/.test(n);
+    if (!recognized && (!informational || financialContext) && /(?:R\$|\d,\d{2}\b)/.test(clean)) {
       const tokens = moneyTokens(clean);
       const label = normalize(
         clean
@@ -400,7 +401,7 @@ export function parsePages(
   );
   if (unparsedLines.length)
     uniqueWarnings.push(
-      `${unparsedLines.length} linha(s) financeira(s) aguardam classificação. Confira a lista na auditoria.`,
+      `${unparsedLines.length} linha(s) financeira(s) foram encaminhadas à auditoria. Confira a situação atual na conferência.`,
     );
   const groupedIssues = new Map();
   for (const issue of extractionIssues) {

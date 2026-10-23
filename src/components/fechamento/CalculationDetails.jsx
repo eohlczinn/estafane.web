@@ -16,7 +16,9 @@ export default function CalculationDetails() {
           ["+ Vendas em dinheiro", fields.cash.value],
           ["+ Suprimentos", fields.supplies.value],
           ["− Sangrias", fields.withdrawals.value],
-          ...(fields.expenses?.value != null ? [["− Despesas autorizadas",fields.expenses.value]] : []),
+          ...(fields.expenses?.value != null
+            ? [["− Despesas autorizadas", fields.expenses.value]]
+            : []),
           [
             "− Devoluções aplicáveis",
             rules.refundTreatment === "included" ||
@@ -57,11 +59,12 @@ export default function CalculationDetails() {
         conferem a soma; não são somados novamente.
       </p>
       {rules.cancellationTreatment === "included" && (
-        <p>Os cancelamentos já estão descontados nas vendas líquidas e não são subtraídos novamente.</p>
+        <p>
+          Os cancelamentos já estão descontados nas vendas líquidas e não são
+          subtraídos novamente.
+        </p>
       )}
-      {fields.refunds.status === "derived" && (
-        <p>{fields.refunds.original}</p>
-      )}
+      {fields.refunds.status === "derived" && <p>{fields.refunds.original}</p>}
       {rules.cashBasis === "net" && (
         <p>
           O saldo líquido substitui a fórmula bruta. Sangrias não são

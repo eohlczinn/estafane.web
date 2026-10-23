@@ -81,7 +81,8 @@ app.locals.verifyAccess = async (req) => {
       )
     ) {
       req.user = { username: "service", role: "system" };
-      req.accessOwner = "bearer:" + createHash("sha256").update(expectedBearer).digest("hex");
+      req.accessOwner =
+        "bearer:" + createHash("sha256").update(expectedBearer).digest("hex");
       return true;
     }
     // Quando ACCESS_BEARER_TOKEN está estritamente definido, não aceita outros métodos
@@ -108,7 +109,9 @@ app.locals.verifyAccess = async (req) => {
 
   if (!strictAuth) {
     const remote = req.socket?.remoteAddress;
-    const isLocalRemote = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(remote);
+    const isLocalRemote = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(
+      remote,
+    );
     const isLocalHost = ["127.0.0.1", "localhost", "::1"].includes(host);
     if (isLocalHost && isLocalRemote) {
       req.user = { username: "dev_local", role: "developer" };
@@ -121,9 +124,11 @@ app.locals.verifyAccess = async (req) => {
 };
 
 // Rotas de Autenticação
-app.use(["/api/auth/login","/api/auth/logout"], (req,res,next) => {
-  if (!isAllowedOrigin(req)) return res.status(403).json({error:"Origem não autorizada."});
-  res.set("Cache-Control","no-store"); next();
+app.use(["/api/auth/login", "/api/auth/logout"], (req, res, next) => {
+  if (!isAllowedOrigin(req))
+    return res.status(403).json({ error: "Origem não autorizada." });
+  res.set("Cache-Control", "no-store");
+  next();
 });
 app.post("/api/auth/login", (req, res) => {
   const { username, password } = req.body || {};
@@ -194,8 +199,7 @@ app.use("/api", async (req, res, next) => {
   // 3. Verificação de acesso para todas as rotas /api
   if (!(await app.locals.verifyAccess(req))) {
     return res.status(401).json({
-      error:
-        "Acesso não autorizado. Faça login para acessar o sistema.",
+      error: "Acesso não autorizado. Faça login para acessar o sistema.",
     });
   }
 
@@ -207,7 +211,7 @@ app.get("/api/health", (_req, res) =>
     status: "ok",
     version: contractVersion,
     appVersion: packageInfo.version,
-    revision: process.env.RENDER_GIT_COMMIT?.slice(0,12) || null,
+    revision: process.env.RENDER_GIT_COMMIT?.slice(0, 12) || null,
     supportedFormats: Object.keys(documentFormats),
     ...limits,
     ocr: "server-local",
@@ -230,11 +234,9 @@ let receiving = 0;
 function receive(mode) {
   return async (req, res, next) => {
     if (receiving >= limits.maxBatches || !canAcceptBatch())
-      return res
-        .status(429)
-        .json({
-          error: "Há lotes em andamento. Aguarde a fila liberar espaço.",
-        });
+      return res.status(429).json({
+        error: "Há lotes em andamento. Aguarde a fila liberar espaço.",
+      });
     receiving++;
     try {
       req.uploadDirectory = await createUploadDirectory();
@@ -281,10 +283,14 @@ app.post(
           .status(file.size > limits.maxUploadBytes ? 413 : 400)
           .json({ error: invalid });
       const hash = await fingerprint(file.path),
-        id = 'doc-' + hash;
+        id = "doc-" + hash;
       const data = await executionQueue.run(
         () =>
-          analyzePDF(file.path, { signal: controller.signal, documentId: id, format: file.detectedFormat }),
+          analyzePDF(file.path, {
+            signal: controller.signal,
+            documentId: id,
+            format: file.detectedFormat,
+          }),
         controller.signal,
       );
       const { type, ok, ...result } = data;
@@ -312,8 +318,15 @@ app.post(
   async (req, res, next) => {
     try {
       let importProfiles;
-      try { importProfiles = validateImportProfiles(JSON.parse(req.body.importProfiles || "[]")); }
-      catch { throw Object.assign(new Error("Perfis de importação inválidos."), {status:400}); }
+      try {
+        importProfiles = validateImportProfiles(
+          JSON.parse(req.body.importProfiles || "[]"),
+        );
+      } catch {
+        throw Object.assign(new Error("Perfis de importação inválidos."), {
+          status: 400,
+        });
+      }
       const job = await startBatch(req.uploadFiles, req.uploadDirectory, {
         autoGroup: req.body.autoGroup !== "false",
         owner: req.accessOwner,
@@ -337,11 +350,9 @@ app.post(
 app.get("/api/fechamento/lotes/:id", (req, res) => {
   const job = getBatch(req.params.id, req.accessOwner);
   if (!job)
-    return res
-      .status(404)
-      .json({
-        error: "Lote expirado ou não encontrado. Envie os arquivos novamente.",
-      });
+    return res.status(404).json({
+      error: "Lote expirado ou não encontrado. Envie os arquivos novamente.",
+    });
   res.json(batchSnapshot(job));
 });
 
@@ -360,26 +371,24 @@ app.use((error, req, res, _next) => {
       : error.code?.startsWith("LIMIT_")
         ? 400
         : error.status || (error.name === "AnalysisTimeout" ? 504 : 422);
-  res
-    .status(status)
-    .json({
-      error:
-        error.code === "LIMIT_BATCH_SIZE"
-          ? `O lote excede ${limits.maxBatchBytes / 1024 / 1024} MB.`
-          : error.code?.startsWith("LIMIT_")
-            ? `Envie até ${limits.maxFiles} documentos, usando o campo correto.`
-            : error.name === "PasswordException"
-              ? "PDF protegido por senha. Exporte uma cópia sem senha."
-              : error.name === "AnalysisTimeout"
-                ? "Tempo limite de leitura excedido."
-                : error.name === "AbortError"
-                  ? "Análise cancelada."
-                  : error.status || error.name === "DocumentError"
+  res.status(status).json({
+    error:
+      error.code === "LIMIT_BATCH_SIZE"
+        ? `O lote excede ${limits.maxBatchBytes / 1024 / 1024} MB.`
+        : error.code?.startsWith("LIMIT_")
+          ? `Envie até ${limits.maxFiles} documentos, usando o campo correto.`
+          : error.name === "PasswordException"
+            ? "PDF protegido por senha. Exporte uma cópia sem senha."
+            : error.name === "AnalysisTimeout"
+              ? "Tempo limite de leitura excedido."
+              : error.name === "AbortError"
+                ? "Análise cancelada."
+                : error.status || error.name === "DocumentError"
+                  ? error.message
+                  : error.message?.includes("limite")
                     ? error.message
-                    : error.message?.includes("limite")
-                      ? error.message
-                      : "Não foi possível ler o documento. Verifique o arquivo ou use a conferência manual.",
-    });
+                    : "Não foi possível ler o documento. Verifique o arquivo ou use a conferência manual.",
+  });
 });
 
 app.use("/api", (_req, res) =>

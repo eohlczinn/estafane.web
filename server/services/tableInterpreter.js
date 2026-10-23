@@ -53,7 +53,10 @@ export function interpretTables(pages) {
           cells,
           sheet: page.sheet,
         });
-      if (mode === "columns" && hasValue) {
+      if (mode === "columns" && nonempty.length === 2 && fieldFor(nonempty[0].text) && (nonempty[1].numeric || /\d,\d{2}\b/.test(nonempty[1].text))) {
+        mode = null;
+        emit(`${nonempty[0].text}: ${nonempty[1].text}`,row.cells);
+      } else if (mode === "columns" && hasValue) {
         row.cells.forEach((cell, i) => {
           const label = header[i]?.text,
             field = label && fieldFor(label);

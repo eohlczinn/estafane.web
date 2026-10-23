@@ -110,7 +110,8 @@ export function reconcile(
       });
   }
   for (const issue of closing.extractionIssues || [])
-    if (!resolutions[issue.id]?.reason?.trim()) add(issue.id, issue.message, { ...issue, kind:"review" });
+    if (!resolutions[issue.id]?.reason?.trim())
+      add(issue.id, issue.message, { ...issue, kind: "review" });
   for (const line of unparsedLines)
     if (!resolutions[line.id]?.reason?.trim())
       add(line.id, "Linha financeira não interpretada: " + line.text, {

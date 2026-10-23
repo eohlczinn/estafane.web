@@ -11,7 +11,8 @@ const norm = (v) =>
 const identityKeys = ["market", "operator", "register", "date"];
 const val = (doc, k) => doc.fields?.[k]?.value;
 export function compareDocuments(a, b) {
-  if (a.hash && a.hash === b.hash && !(a.partOf && b.partOf && a.id !== b.id)) return "duplicate";
+  if (a.hash && a.hash === b.hash && !(a.partOf && b.partOf && a.id !== b.id))
+    return "duplicate";
   if (
     identityKeys.some(
       (k) => val(a, k) && val(b, k) && norm(val(a, k)) !== norm(val(b, k)),

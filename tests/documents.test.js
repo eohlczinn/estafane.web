@@ -126,3 +126,17 @@ it("despesa autorizada afeta apenas dinheiro físico e mantém a direção",() =
   expect(r.fields.expenses.value).toBe(1000);expect(reconcile(r).calculation.expected).toBe(72075);
   expect(r.movements.find(m => m.type === "expense").direction).toBe("out");
 });
+it("adicionar item não substitui silenciosamente um total sem detalhamento",() => {
+  const p=parsePages([{page:1,text:"Total de sangrias: 900,00\nAjuste especial: 25,00"}],{documentId:"test"});
+  const c=mergeDocuments([{...p,id:"test",filename:"teste.txt",hash:"b".repeat(64),pages:[]}],"closing");
+  expect(()=>classifyUnknownLine(c,c.unparsedLines[0].id,"withdrawals",2500,"Conferido no original","movement")).toThrow(/total/);
+  expect(c.fields.withdrawals.value).toBe(90000);
+});
+it("rodapé com indício de dinheiro não é descartado como texto decorativo",() => {
+  const p=parsePages([{page:1,text:"Emitido em 23/10/2026 - ajuste de dinheiro: 25,00"}]);
+  expect(p.unparsedLines).toHaveLength(1);
+});
+it("rótulos após tabela horizontal não herdam colunas do cabeçalho anterior",async () => {
+  const r=await parse(workbookBytes("xlsx",[{name:"Caixa",rows:[...headerRows,["Dinheiro","PIX","Total de vendas"],[1280.75,0,1280.75],["Fundo inicial",200],["Sangrias",900],["Suprimentos",150],["Devolucoes em dinheiro",0],["Dinheiro contado",717.25]]}]),"xlsx");
+  expect(r.fields.opening.value).toBe(20000);expect(r.fields.cash.value).toBe(128075);expect(reconcile(r).calculation.difference).toBe(-1350);
+});

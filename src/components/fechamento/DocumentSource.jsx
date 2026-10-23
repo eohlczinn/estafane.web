@@ -23,7 +23,8 @@ export default function DocumentSource() {
       {pages.map((p) => (
         <details key={(p.documentId || "single") + ":" + p.page}>
           <summary>
-            {p.filename || "Documento"} · {p.sheet ? `Aba ${p.sheet}` : `Página ${p.page}`}
+            {p.filename || "Documento"} ·{" "}
+            {p.sheet ? `Aba ${p.sheet}` : `Página ${p.page}`}
             {p.ocr ? " · OCR local" : ""}
           </summary>
           <pre>

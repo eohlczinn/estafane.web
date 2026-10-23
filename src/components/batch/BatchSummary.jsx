@@ -28,14 +28,33 @@ export default function BatchSummary({ summary }) {
           ? `Resumo parcial: ${summary.pendingCount} fechamento(s) pendente(s) e ${summary.failedDocumentCount} documento(s) com erro/cancelados. Os valores acima incluem somente fechamentos confirmados.`
           : `Todos os fechamentos confirmados. Saldo líquido das diferenças: ${formatMoney(summary.netDifferenceCents)}. Faltas e sobras permanecem identificadas separadamente.`}
       </p>
-      {summary.validatedCount > 0 && <details className="panel">
-        <summary>Vendas confirmadas por operadora, dia e turno</summary>
-        {[["byOperator","Operadora"],["byDate","Data"],["byShift","Turno"]].map(([key,label]) => <div key={key}>
-          <h3>{label}</h3><dl>{summary[key]?.map(group => <div className="summary-breakdown" key={group.label}>
-            <dt>{group.label} · {group.count} fechamento(s)</dt><dd>Vendas: {formatMoney(group.salesCents)} · Diferença: {formatMoney(group.differenceCents)}</dd>
-          </div>)}</dl>
-        </div>)}
-      </details>}
+      {summary.validatedCount > 0 && (
+        <details className="panel">
+          <summary>Vendas confirmadas por operadora, dia e turno</summary>
+          {[
+            ["byOperator", "Operadora"],
+            ["byDate", "Data"],
+            ["byShift", "Turno"],
+          ].map(([key, label]) => (
+            <div key={key}>
+              <h3>{label}</h3>
+              <dl>
+                {summary[key]?.map((group) => (
+                  <div className="summary-breakdown" key={group.label}>
+                    <dt>
+                      {group.label} · {group.count} fechamento(s)
+                    </dt>
+                    <dd>
+                      Vendas: {formatMoney(group.salesCents)} · Diferença:{" "}
+                      {formatMoney(group.differenceCents)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ))}
+        </details>
+      )}
     </>
   );
 }

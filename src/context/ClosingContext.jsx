@@ -12,8 +12,18 @@ import {
   mergeDocuments,
   resolveGroupingDecision,
 } from "../../shared/grouping.js";
-import { editField, editMovement, classifyUnknownLine, rememberChange, undoChange } from "../../shared/closingEdits.js";
-import { readImportProfiles, validateImportProfiles, profileStorageKey } from "../../shared/importProfiles.js";
+import {
+  editField,
+  editMovement,
+  classifyUnknownLine,
+  rememberChange,
+  undoChange,
+} from "../../shared/closingEdits.js";
+import {
+  readImportProfiles,
+  validateImportProfiles,
+  profileStorageKey,
+} from "../../shared/importProfiles.js";
 const Context = createContext();
 function fresh(prefs) {
   return {
@@ -137,13 +147,12 @@ export function ClosingProvider({ children }) {
     };
   }, []);
   function mutate(fn, record = true) {
-    const apply = old => audited(record ? rememberChange(old, fn(old)) : fn(old));
+    const apply = (old) =>
+      audited(record ? rememberChange(old, fn(old)) : fn(old));
     if (batch && batch.closings.some((c) => c.id === activeId))
       setBatch((old) => ({
         ...old,
-        closings: old.closings.map((c) =>
-          c.id === activeId ? apply(c) : c,
-        ),
+        closings: old.closings.map((c) => (c.id === activeId ? apply(c) : c)),
       }));
     else setManual(apply);
   }
@@ -193,11 +202,14 @@ export function ClosingProvider({ children }) {
       );
       return false;
     }
-    mutate((old) => ({
-      ...old,
-      confirmed: value,
-      reviewed: value ? true : old.reviewed,
-    }), false);
+    mutate(
+      (old) => ({
+        ...old,
+        confirmed: value,
+        reviewed: value ? true : old.reviewed,
+      }),
+      false,
+    );
     return true;
   }
   function resolveIssue(id, reason) {
@@ -269,21 +281,49 @@ export function ClosingProvider({ children }) {
         resolveGrouping,
         resolveIssue,
         updateMovement,
-        classifyLine: (id, field, value, reason, mode) => mutate(old => classifyUnknownLine(old,id,field,value,reason,mode)),
+        classifyLine: (id, field, value, reason, mode) =>
+          mutate((old) =>
+            classifyUnknownLine(old, id, field, value, reason, mode),
+          ),
         undo: () => mutate(undoChange, false),
         saveImportProfile: () => {
-          if (!closing.confirmed || !audit.canConfirm) { setNotice("Confirme o fechamento antes de salvar o perfil."); return; }
+          if (!closing.confirmed || !audit.canConfirm) {
+            setNotice("Confirme o fechamento antes de salvar o perfil.");
+            return;
+          }
           try {
             const profiles = readImportProfiles(localStorage);
             for (const correction of closing.profileCorrections || []) {
               if (!correction.layoutKey || !correction.label) continue;
-              let profile = profiles.find(p => p.layoutKey === correction.layoutKey);
-              if (!profile) { profile = {version:1,layoutKey:correction.layoutKey,name:"Layout conferido",rules:[]}; profiles.push(profile); }
-              profile.rules = [...profile.rules.filter(r => r.label !== correction.label),{label:correction.label,field:correction.field}];
+              let profile = profiles.find(
+                (p) => p.layoutKey === correction.layoutKey,
+              );
+              if (!profile) {
+                profile = {
+                  version: 1,
+                  layoutKey: correction.layoutKey,
+                  name: "Layout conferido",
+                  rules: [],
+                };
+                profiles.push(profile);
+              }
+              profile.rules = [
+                ...profile.rules.filter((r) => r.label !== correction.label),
+                { label: correction.label, field: correction.field },
+              ];
             }
-            localStorage.setItem(profileStorageKey,JSON.stringify(validateImportProfiles(profiles)));
-            setNotice("Perfil salvo neste navegador. Sugestões só serão usadas no mesmo layout e continuarão exigindo conferência.");
-          } catch { setNotice("Não foi possível salvar o perfil. Limite de 20 layouts ou armazenamento indisponível."); }
+            localStorage.setItem(
+              profileStorageKey,
+              JSON.stringify(validateImportProfiles(profiles)),
+            );
+            setNotice(
+              "Perfil salvo neste navegador. Sugestões só serão usadas no mesmo layout e continuarão exigindo conferência.",
+            );
+          } catch {
+            setNotice(
+              "Não foi possível salvar o perfil. Limite de 20 layouts ou armazenamento indisponível.",
+            );
+          }
         },
         setRules: (value) =>
           mutate((old) => ({

@@ -130,6 +130,7 @@ export default function Settings() {
           ["mercado", "Mercado"],
           ["fechamento", "Fechamento"],
           ["processamento", "Documentos e lotes"],
+          ["perfis-importacao", "Perfis de importação"],
           ["impressao", "Impressão"],
           ["relatorios", "Relatórios"],
           ["perfil-local", "Perfil"],
