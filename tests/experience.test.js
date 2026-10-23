@@ -32,8 +32,9 @@ it('repetir escolhas muda recomendações sem inventar hábitos',()=>{
   let m=emptyExperience();for(let i=0;i<3;i++)m=addSignal(m,'quotes','faith',now);
   expect(recommendations(m,context,now).some(r=>r.id==='faith')).toBe(true);
   expect(recommendations(emptyExperience(),context,now).some(r=>r.id==='faith')).toBe(false);
-  for(let i=0;i<2;i++){m=addSignal(m,'accent','coral',now);m=addSignal(m,'paper','80',now);}
-  const personalized=recommendations(m,context,now);
+  let taste=emptyExperience();
+  for(let i=0;i<2;i++){taste=addSignal(taste,'accent','coral',now);taste=addSignal(taste,'paper','80',now);}
+  const personalized=recommendations(taste,context,now);
   expect(personalized.find(r=>r.id==='effects').description).toContain('coral');
   expect(personalized.find(r=>r.id==='layout').description).toContain('80 mm');
 });
