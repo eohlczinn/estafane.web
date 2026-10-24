@@ -1,4 +1,4 @@
-import React, {lazy, Suspense} from "react";
+import React, { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
@@ -6,11 +6,14 @@ import { ClosingProvider } from "./context/ClosingContext.jsx";
 import Layout from "./components/layout/Layout.jsx";
 import Login from "./components/auth/Login.jsx";
 import Home from "./pages/Home.jsx";
-import { ExperienceProvider } from './context/ExperienceContext.jsx';
-const Report=lazy(()=>import('./pages/Report.jsx'));
-const Settings=lazy(()=>import('./pages/Settings.jsx'));
-const Profile=lazy(()=>import('./pages/Profile.jsx'));
-const Support=lazy(()=>import('./pages/Support.jsx'));
+import { ExperienceProvider } from "./context/ExperienceContext.jsx";
+import { WorkspaceProvider } from "./context/WorkspaceContext.jsx";
+const History = lazy(() => import("./pages/History.jsx"));
+const Notifications = lazy(() => import("./pages/Notifications.jsx"));
+const Report = lazy(() => import("./pages/Report.jsx"));
+const Settings = lazy(() => import("./pages/Settings.jsx"));
+const Profile = lazy(() => import("./pages/Profile.jsx"));
+const Support = lazy(() => import("./pages/Support.jsx"));
 import Results from "./pages/Results.jsx";
 import BatchResults from "./pages/BatchResults.jsx";
 
@@ -39,22 +42,32 @@ function AppContent() {
   return (
     <ClosingProvider>
       <ExperienceProvider>
-      <Layout>
-        <Suspense fallback={<div className="route-loading" role="status">Preparando seu espaço…</div>}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/ler-pdf" element={<Home reader />} />
-          <Route path="/relatorio" element={<Report />} />
-          <Route path="/resultado" element={<Results />} />
-          <Route path="/lote" element={<BatchResults />} />
-          <Route path="/imprimir" element={<Report printPage />} />
-          <Route path="/configuracoes" element={<Settings />} />
-          <Route path="/perfil" element={<Profile />} />
-          <Route path="/suporte" element={<Support />} />
-          <Route path="*" element={<Home />} />
-        </Routes>
-        </Suspense>
-      </Layout>
+        <WorkspaceProvider>
+          <Layout>
+            <Suspense
+              fallback={
+                <div className="route-loading" role="status">
+                  Preparando seu espaço…
+                </div>
+              }
+            >
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/ler-pdf" element={<Home reader />} />
+                <Route path="/relatorio" element={<Report />} />
+                <Route path="/resultado" element={<Results />} />
+                <Route path="/lote" element={<BatchResults />} />
+                <Route path="/imprimir" element={<Report printPage />} />
+                <Route path="/configuracoes" element={<Settings />} />
+                <Route path="/perfil" element={<Profile />} />
+                <Route path="/historico" element={<History />} />
+                <Route path="/notificacoes" element={<Notifications />} />
+                <Route path="/suporte" element={<Support />} />
+                <Route path="*" element={<Home />} />
+              </Routes>
+            </Suspense>
+          </Layout>
+        </WorkspaceProvider>
       </ExperienceProvider>
     </ClosingProvider>
   );

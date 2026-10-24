@@ -1,31 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Heart, Sparkles, Pause, Play, ArrowRight } from "lucide-react";
-import { resolvePerformance } from '../../services/preferences.js';
-import {useExperience} from '../../context/experience.js';
+import { resolvePerformance } from "../../services/preferences.js";
+import { useExperience } from "../../context/experience.js";
 
-const messages = [
-  ["faith", "Que Deus ilumine seus passos e traga paz ao seu coração."],
-  [
-    "motivation",
-    "Um passo de cada vez. Seu esforço de hoje também merece carinho.",
-  ],
-  ["faith", "Entregue suas preocupações a Deus e siga com fé e serenidade."],
-  [
-    "motivation",
-    "Respire fundo. Você pode recomeçar com calma quantas vezes precisar.",
-  ],
-  ["faith", "Que a gratidão te acompanhe nas pequenas bênçãos do dia."],
-  [
-    "motivation",
-    "Celebre suas pequenas conquistas. Elas também contam a sua história.",
-  ],
-  ["faith", "Fé para continuar, sabedoria para escolher e paz para descansar."],
-  ["motivation", "Faça o seu melhor com gentileza, inclusive com você mesma."],
-];
+import { messages } from "../../services/quotes.js";
 
 export default function Encouragement({ prefs, compact = false }) {
-  const experience=useExperience();
-  const [liked,setLiked]=useState('');
+  const experience = useExperience();
+  const [liked, setLiked] = useState("");
   const [index, setIndex] = useState(0),
     [paused, setPaused] = useState(false);
   const [visible, setVisible] = useState(() => !document.hidden);
@@ -41,7 +23,7 @@ export default function Encouragement({ prefs, compact = false }) {
     prefs.autoRotateQuotes &&
     prefs.animation !== "off" &&
     !prefs.reduceMotion &&
-    resolvePerformance(prefs,navigator) !== 'eco' &&
+    resolvePerformance(prefs, navigator) !== "eco" &&
     !reduced;
   useEffect(() => {
     const media = matchMedia("(prefers-reduced-motion: reduce)");
@@ -93,7 +75,17 @@ export default function Encouragement({ prefs, compact = false }) {
           · {position + 1}/{selected.length}
         </span>
         <div>
-          <button type="button" aria-pressed={liked===`${prefs.quoteCategory}-${position}`} aria-label="Gostei deste estilo de frase" onClick={()=>{setLiked(`${prefs.quoteCategory}-${position}`);experience?.record('quotes',selected[position][0]);}}><Heart size={15}/></button>
+          <button
+            type="button"
+            aria-pressed={liked === `${prefs.quoteCategory}-${position}`}
+            aria-label="Gostei deste estilo de frase"
+            onClick={() => {
+              setLiked(`${prefs.quoteCategory}-${position}`);
+              experience?.record("quotes", selected[position][0]);
+            }}
+          >
+            <Heart size={15} />
+          </button>
           {canRotate && (
             <button
               type="button"

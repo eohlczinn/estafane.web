@@ -1,4 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { useClosing } from "../context/ClosingContext.jsx";
+import { useWorkspace } from "../context/workspace.js";
+import { cashKnowledge, searchText } from "../services/knowledge.js";
 import { Headphones } from "lucide-react";
 const faq = [
   [
@@ -43,7 +47,7 @@ const faq = [
   ],
   [
     "Meus dados são enviados para outro serviço?",
-    "Não são usados serviços externos de leitura ou OCR. Os documentos são enviados ao servidor desta instalação. Os temporários são descartados após a análise. Resultados ficam na sessão do navegador e temporariamente na memória do servidor, por até 10 minutos na configuração padrão, vinculados à sessão que fez o envio. Recarregar a página limpa os dados financeiros do navegador. Perfis guardam apenas classificações no navegador, sem arquivos nem valores financeiros.",
+    "Não são usados serviços externos de leitura ou OCR. Os documentos são enviados ao servidor desta instalação. Os temporários são descartados após a análise. Resultados ficam na sessão do navegador e temporariamente na memória do servidor, por até 10 minutos na configuração padrão, vinculados à sessão que fez o envio. Recarregar limpa os dados que ainda não foram salvos. O histórico guarda os fechamentos escolhidos neste navegador, com valores e texto extraído, sem os arquivos originais; você pode excluí-los. Perfis guardam apenas classificações no navegador, sem arquivos nem valores financeiros.",
   ],
   [
     "Como os documentos são agrupados?",
@@ -55,6 +59,14 @@ const faq = [
   ],
 ];
 export default function Support() {
+  const [query, setQuery] = useState("");
+  const { audit, backend, closing } = useClosing(),
+    { records } = useWorkspace();
+  const term = searchText(query),
+    answers = faq.filter((item) => searchText(item.join(" ")).includes(term)),
+    knowledge = cashKnowledge.filter((item) =>
+      searchText(item.term + " " + item.text).includes(term),
+    );
   return (
     <>
       <div className="page-heading">
@@ -62,12 +74,82 @@ export default function Support() {
           <Headphones />
         </span>
         <div>
-          <h1>Como podemos ajudar?</h1>
+          <h1>Central de ajuda e conhecimento</h1>
           <p>Um guia rápido para fechar seu caixa com tranquilidade.</p>
         </div>
       </div>
+      <div className="support-tools">
+        <section className="panel">
+          <div className="eyebrow">DIAGNÓSTICO DO SEU ESPAÇO</div>
+          <h2>Seu próximo passo</h2>
+          <ul className="support-status-list">
+            <li>
+              Servidor:{" "}
+              {backend === "online"
+                ? "conectado"
+                : backend === "checking"
+                  ? "verificando"
+                  : "sem resposta"}
+            </li>
+            <li>{closing.documents.length} documento(s) no caixa atual</li>
+            <li>
+              {audit.issues.length} pendência(s) na conferência automática
+            </li>
+            <li>{records.length} fechamento(s) guardado(s) no histórico</li>
+          </ul>
+          <Link
+            className="secondary"
+            to={audit.issues.length ? "/resultado" : "/ler-pdf"}
+          >
+            {audit.issues.length
+              ? "Resolver pendências"
+              : "Importar outro documento"}
+          </Link>
+        </section>
+        <section className="panel">
+          <div className="eyebrow">APRENDA COM O SEU PRÓPRIO LAYOUT</div>
+          <h2>Um sistema que aproveita suas correções</h2>
+          <p>
+            Confira a origem de uma linha, escolha a categoria e confirme o
+            fechamento. Depois salve as classificações. O sistema reutiliza
+            regras explícitas em documentos do mesmo layout, sem inventar
+            valores.
+          </p>
+          <Link className="secondary" to="/configuracoes#perfis-importacao">
+            Gerenciar conhecimento dos layouts
+          </Link>
+        </section>
+      </div>
+      <label className="support-search">
+        Pesquisar na ajuda e no conhecimento
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Ex.: sangria, PDF, histórico, senha, impressão"
+        />
+      </label>
+      {knowledge.length > 0 && (
+        <section
+          aria-label="Conceitos do fechamento"
+          className="knowledge-grid"
+        >
+          {knowledge.map((item) => (
+            <article key={item.term}>
+              <h3>{item.term}</h3>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </section>
+      )}
+      {!knowledge.length && !answers.length && (
+        <p role="status">
+          Não há um artigo para essa busca. Tente “PDF”, “conferir”, “histórico”
+          ou “imprimir”.
+        </p>
+      )}
       <section className="panel faq">
-        {faq.map(([q, a]) => (
+        {answers.map(([q, a]) => (
           <details key={q}>
             <summary>{q}</summary>
             <p>{a}</p>

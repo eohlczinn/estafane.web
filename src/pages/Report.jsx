@@ -18,10 +18,11 @@ import {
 } from "../services/report.js";
 import PaperFormats from "../components/printing/PaperFormats.jsx";
 import { reportFilename } from "../services/preferences.js";
-import {useExperience} from '../context/experience.js';
+import { useExperience } from "../context/experience.js";
 export default function Report({ printPage = false }) {
-  const {record}=useExperience();
-  const { closing, batch, prefs, setNotice, saveImportProfile } = useClosing(),
+  const { record } = useExperience();
+  const { closing, batch, prefs, setNotice, saveImportProfile, update } =
+      useClosing(),
     [modal, setModal] = useState(printPage),
     [paper, setPaper] = useState(prefs.paper),
     [zoom, setZoom] = useState(100),
@@ -126,7 +127,7 @@ export default function Report({ printPage = false }) {
             : individualFilename(closing, prefs, paper, generated),
         );
       setNotice("PDF gerado e enviado para download no navegador.");
-      record('workflow','export');
+      record("workflow", "export");
     } catch {
       setNotice(
         "Não foi possível gerar o relatório. Confira o formato e o logotipo configurados.",
@@ -246,7 +247,25 @@ export default function Report({ printPage = false }) {
           </p>
         </div>
       </div>
-      {confirmed && scope==='individual' && closing.profileCorrections?.length>0 && <section className="panel learning-card"><h2>Guarde o que você ensinou</h2><p>As classificações conferidas podem virar sugestões no próximo arquivo do mesmo layout. Valores não são memorizados.</p><button className="secondary" onClick={()=>{if(saveImportProfile())record('workflow','learn');}}>Salvar aprendizado deste layout</button></section>}
+      {confirmed &&
+        scope === "individual" &&
+        closing.profileCorrections?.length > 0 && (
+          <section className="panel learning-card">
+            <h2>Guarde o que você ensinou</h2>
+            <p>
+              As classificações conferidas podem virar sugestões no próximo
+              arquivo do mesmo layout. Valores não são memorizados.
+            </p>
+            <button
+              className="secondary"
+              onClick={() => {
+                if (saveImportProfile()) record("workflow", "learn");
+              }}
+            >
+              Salvar aprendizado deste layout
+            </button>
+          </section>
+        )}
       {!confirmed && (
         <div className="print-pending-notice">
           <div>
@@ -265,17 +284,41 @@ export default function Report({ printPage = false }) {
           </Link>
         </div>
       )}
+      {scope === "individual" && (
+        <section className="panel report-market-editor">
+          <label>
+            Nome do mercado no relatório
+            <input
+              maxLength={180}
+              value={closing.fields.market?.value || ""}
+              placeholder="Informe o nome do estabelecimento"
+              onChange={(e) => {
+                update("market", e.target.value);
+                setNotice(
+                  "Nome do mercado alterado. Confira e confirme o fechamento novamente.",
+                );
+              }}
+            />
+          </label>
+          <p className="muted">
+            A alteração atualiza a identificação deste caixa. Confirme novamente
+            o fechamento para emitir a versão corrigida.
+          </p>
+        </section>
+      )}
       <div className="report-toolbar panel">
-        <span className={`result-chip ${scope==='individual'?calc.result:partial?'pending':'consolidated'}`}>
+        <span
+          className={`result-chip ${scope === "individual" ? calc.result : partial ? "pending" : "consolidated"}`}
+        >
           {scope === "consolidated"
             ? partial
               ? "CONSOLIDADO PARCIAL"
               : "CONSOLIDADO VALIDADO"
             : !confirmed
               ? "CONFERÊNCIA PENDENTE"
-              : scope==='selected'
+              : scope === "selected"
                 ? `${models.length} FECHAMENTOS CONFIRMADOS`
-              : statusLabels[calc.result]}
+                : statusLabels[calc.result]}
         </span>
         <button className="secondary" onClick={() => setModal(true)}>
           <Printer size={18} /> Imprimir

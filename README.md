@@ -114,7 +114,7 @@ As preferências de limite no navegador podem reduzir, nunca ampliar, o limite d
 
 Uploads são gravados por streaming em diretórios aleatórios na pasta temporária do sistema, sem cópias integrais de lotes na memória do Express. Arquivos individuais acima do limite são descartados e sinalizados sem impedir os demais. O tamanho total é medido durante o streaming. Arquivos são removidos após o processamento e cancelamento. Diretórios de execuções interrompidas, com mais de duas horas, são limpos na inicialização e periodicamente. Diretórios de limpeza são verificados dentro da raiz de temporários da aplicação.
 
-Resultados estruturados permanecem apenas em memória: até a expiração do lote, com limite adicional de dez lotes finalizados retidos. O navegador mantém a sessão financeira até recarregar. localStorage contém somente preferências permitidas; não inclui documentos, valores, texto ou observações financeiras. Downloads explícitos permanecem onde o navegador salvar.
+No servidor, resultados estruturados permanecem em memória até a expiração do lote, com limite adicional de dez lotes finalizados retidos. No navegador, o caixa em edição fica na sessão; o histórico salva os fechamentos escolhidos em IndexedDB, incluindo valores, texto extraído e observações, sem arquivos originais. Caixas confirmados podem ser arquivados automaticamente. Há limites, exclusão explícita e nova conferência ao reabrir. localStorage contém preferências, perfil e notificações. Downloads explícitos permanecem onde o navegador salvar. Veja [a arquitetura da versão 1.3](EVOLUCAO-1.3.md).
 
 ## Relatórios e impressão
 
@@ -163,7 +163,7 @@ Configure `ADMIN_PASSWORD_HASH` (ou `ADMIN_PASSWORD`) e `SESSION_SECRET` nas var
 
 ### Perfil, mensagens e movimento
 
-O perfil usa os dados de `src/services/profile.js` (Estefane, 21 anos). Instagram, Facebook e WhatsApp são apenas ícones decorativos, sem links para perfis inventados. `Encouragement.jsx` compartilha frases religiosas e motivacionais entre início e perfil, com pausa, avanço, categoria e intervalo de 8 a 60 segundos. O temporizador para quando a aba fica oculta e quando movimento reduzido está ativo.
+O perfil começa com os dados de `src/services/profile.js` (Estefane, 21 anos) e permite editar nome, cidade, função, frase e links reais de Instagram, Facebook e WhatsApp. Contas não informadas não ganham destinos inventados. `Encouragement.jsx` compartilha 32 frases religiosas e motivacionais entre início e perfil, com pausa, avanço, categoria e intervalo de 8 a 60 segundos. O temporizador para quando a aba fica oculta e quando movimento reduzido está ativo. Profundidade 3D, órbitas e intensidade são configuráveis e respeitam o modo econômico.
 
 As preferências de foto flutuante, brilho, hover e transição são independentes e persistem no navegador. `src/hooks/useAppearance.js` aplica o tema e o movimento no login e na área autenticada; `src/styles/personal.css` mantém os novos estilos separados do arquivo geral, usando transform e opacity, sem dependências ou animação quadro a quadro em JavaScript. A opção Sem animações e o movimento reduzido do sistema têm prioridade.
 

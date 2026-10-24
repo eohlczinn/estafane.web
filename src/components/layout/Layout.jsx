@@ -21,16 +21,19 @@ import {
   ArrowUpRight,
   Sparkles,
   LogOut,
+  Archive,
 } from "lucide-react";
 import { useClosing } from "../../context/ClosingContext.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
-import { estefaneProfile } from "../../services/profile.js";
+import { useWorkspace } from "../../context/workspace.js";
+import DepthCard from "../profile/DepthCard.jsx";
 
 const links = [
   ["/", "Início", House],
   ["/ler-pdf", "Importar", FileText],
   ["/lote", "Fechamentos", ChartNoAxesColumnIncreasing],
+  ["/historico", "Histórico", Archive],
   ["/relatorio", "Relatório", ChartNoAxesColumnIncreasing],
   ["/imprimir", "Imprimir", Printer],
   ["/configuracoes", "Configurações", Settings],
@@ -39,13 +42,27 @@ const links = [
 
 export default function Layout({ children }) {
   const location = useLocation();
-  const { prefs, setPrefs, notice, busy, confirmed, backend, filename } =
-      useClosing(),
+  const {
+      prefs,
+      setPrefs,
+      notice,
+      setNotice,
+      busy,
+      confirmed,
+      backend,
+      filename,
+    } = useClosing(),
     { logout, user } = useAuth(),
     [menu, setMenu] = useState(false),
     [profile, setProfile] = useState(false),
     [notifications, setNotifications] = useState(false);
   const navigate = useNavigate();
+  const {
+    profile: profileData,
+    notifications: messages,
+    unread,
+    readAll,
+  } = useWorkspace();
 
   return (
     <div className="app-shell">
@@ -78,7 +95,7 @@ export default function Layout({ children }) {
             </NavLink>
           ))}
         </nav>
-        <div className="sidebar-note living-card">
+        <DepthCard className="sidebar-note living-card">
           <div className="cart-art floating-art">
             <ShoppingCart size={65} />
             <Sparkles className="spark" size={22} />
@@ -96,7 +113,7 @@ export default function Layout({ children }) {
           <div className="sidebar-flow">
             PDF <span>→</span> Conferência <span>→</span> Relatório
           </div>
-        </div>
+        </DepthCard>
         <div className="local-tag">
           <ShieldCheck size={15} /> Sessão autenticada e protegida
         </div>
@@ -181,15 +198,26 @@ export default function Layout({ children }) {
                 }}
               >
                 <Bell size={21} />
-                {notice && <i />}
+                {unread > 0 && <i />}
               </button>
               {notifications && (
                 <div className="popover notification-pop">
-                  <h3>Notificações do sistema</h3>
-                  <p>
-                    {notice ||
-                      "Nenhuma notificação. Seu próximo fechamento começa com um documento."}
-                  </p>
+                  <h3>Notificações · {unread} não lidas</h3>
+                  {messages.slice(0, 3).map((n) => (
+                    <p key={n.id}>{n.text}</p>
+                  ))}
+                  {!messages.length && <p>Nenhum aviso por enquanto.</p>}
+                  <Link
+                    to="/notificacoes"
+                    onClick={() => setNotifications(false)}
+                  >
+                    Abrir central de notificações →
+                  </Link>
+                  {unread > 0 && (
+                    <button className="secondary" onClick={readAll}>
+                      Marcar como lidas
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -202,19 +230,23 @@ export default function Layout({ children }) {
                 }}
                 aria-expanded={profile}
               >
-                <img className="living-avatar" src="/estefane.jpg" alt="Estefane" />
-                <strong>{user?.name || "Estefane"}</strong>
+                <img
+                  className="living-avatar"
+                  src="/estefane.jpg"
+                  alt={profileData.name}
+                />
+                <strong>{profileData.name}</strong>
                 <ChevronDown size={17} />
               </button>
               {profile && (
                 <div className="popover profile-pop">
                   <div className="profile-summary">
-                    <img src="/estefane.jpg" alt="Estefane" />
+                    <img src="/estefane.jpg" alt={profileData.name} />
                     <div>
-                      <h3>{user?.name || "Estefane"}</h3>
-                      <p>{estefaneProfile.age} anos</p>
+                      <h3>{profileData.name}</h3>
+                      <p>{profileData.age} anos</p>
                       <span>
-                        <MapPin size={13} /> Águas Lindas de Goiás
+                        <MapPin size={13} /> {profileData.city}
                       </span>
                     </div>
                   </div>
@@ -228,7 +260,7 @@ export default function Layout({ children }) {
                     [
                       BriefcaseBusiness,
                       "Perfil profissional",
-                      "Operadora de caixa",
+                      profileData.role,
                       "/perfil",
                     ],
                     [
@@ -274,6 +306,18 @@ export default function Layout({ children }) {
           <div className="backend-alert" role="alert">
             O servidor está indisponível. Verifique a conexão ou tente
             novamente. Você ainda pode revisar os dados desta sessão.
+          </div>
+        )}
+        {notice && (
+          <div className="workspace-notice" role="status">
+            <span>{notice}</span>
+            <button
+              className="icon-btn"
+              aria-label="Dispensar aviso"
+              onClick={() => setNotice("")}
+            >
+              <X size={17} />
+            </button>
           </div>
         )}
         <main key={location.pathname}>{children}</main>

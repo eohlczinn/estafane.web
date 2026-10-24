@@ -8,11 +8,14 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useClosing } from "../../context/ClosingContext.jsx";
 import { analyzeFiles } from "../../services/closingApi.js";
 import FileList from "./FileList.jsx";
-import { documentAccept, declaredFormatError } from "../../../shared/documentFormats.js";
+import {
+  documentAccept,
+  declaredFormatError,
+} from "../../../shared/documentFormats.js";
 import { groupDocuments } from "../../../shared/grouping.js";
 export default function Upload() {
   const navigate = useNavigate(),
@@ -77,11 +80,19 @@ export default function Upload() {
     }
   }
   async function analyze(retry = false) {
-    const selectedFiles = retry ? files.filter((_,i) => ["error","cancelled"].includes(progress[i]?.status)) : files;
+    const selectedFiles = retry
+      ? files.filter((_, i) =>
+          ["error", "cancelled"].includes(progress[i]?.status),
+        )
+      : files;
     if (!selectedFiles.length || busy) return;
     setBusy(true);
     setError("");
-    setProgress(old => files.map((item,i) => selectedFiles.includes(item) ? { status: "waiting" } : old[i]));
+    setProgress((old) =>
+      files.map((item, i) =>
+        selectedFiles.includes(item) ? { status: "waiting" } : old[i],
+      ),
+    );
     controller.current = new AbortController();
     try {
       const data = await analyzeFiles(
@@ -89,13 +100,32 @@ export default function Upload() {
         {
           signal: controller.current.signal,
           autoGroup: prefs.autoGroup,
-          onProgress: (data) => setProgress(old => files.map((item,i) => data.documents.find(d => d.hash === item.hash) || old[i])),
+          onProgress: (data) =>
+            setProgress((old) =>
+              files.map(
+                (item, i) =>
+                  data.documents.find((d) => d.hash === item.hash) || old[i],
+              ),
+            ),
         },
       );
-      const documents = retry && lastResult ? [...lastResult.documents.filter(d => !selectedFiles.some(f => f.hash === d.hash)),...data.documents] : data.documents;
-      const result = { ...data, documents, ...groupDocuments(documents, { autoGroup:prefs.autoGroup }) };
+      const documents =
+        retry && lastResult
+          ? [
+              ...lastResult.documents.filter(
+                (d) => !selectedFiles.some((f) => f.hash === d.hash),
+              ),
+              ...data.documents,
+            ]
+          : data.documents;
+      const result = {
+        ...data,
+        documents,
+        ...groupDocuments(documents, { autoGroup: prefs.autoGroup }),
+      };
       setLastResult(result);
-      if (!documents.some(d => ["error","cancelled"].includes(d.status))) openResult(result);
+      if (!documents.some((d) => ["error", "cancelled"].includes(d.status)))
+        openResult(result);
     } catch (error) {
       setError(
         error.name === "AbortError"
@@ -121,7 +151,11 @@ export default function Upload() {
   }
   function openResult(result) {
     loadBatch(result);
-    navigate(result.closings.length === 1 && result.documents.length === 1 ? "/resultado" : "/lote");
+    navigate(
+      result.closings.length === 1 && result.documents.length === 1
+        ? "/resultado"
+        : "/lote",
+    );
   }
   return (
     <section className="panel upload-panel">
@@ -131,7 +165,9 @@ export default function Upload() {
         </span>
         <div>
           <h2>Importar documentos do caixa</h2>
-          <p>Envie PDFs, planilhas Excel, CSVs e outros formatos compatíveis.</p>
+          <p>
+            Envie PDFs, planilhas Excel, CSVs e outros formatos compatíveis.
+          </p>
         </div>
       </div>
       <div
@@ -165,8 +201,9 @@ export default function Upload() {
               : "Selecionar documentos"}
         </button>
         <small>
-          PDF, XLSX, XLS, ODS, CSV, TXT, PNG e JPEG · Até {maxFiles} arquivos · {serverLimits.maxUploadBytes / 1024 / 1024} MB
-          por arquivo · {serverLimits.maxBatchBytes / 1024 / 1024} MB por lote
+          PDF, XLSX, XLS, ODS, CSV, TXT, PNG e JPEG · Até {maxFiles} arquivos ·{" "}
+          {serverLimits.maxUploadBytes / 1024 / 1024} MB por arquivo ·{" "}
+          {serverLimits.maxBatchBytes / 1024 / 1024} MB por lote
         </small>
         <input
           ref={input}
@@ -233,10 +270,28 @@ export default function Upload() {
           ? "Analisando documentos…"
           : `Analisar ${files.length || ""} documento${files.length === 1 ? "" : "s"}`}
       </button>
-      {lastResult && !busy && <div className="batch-actions">
-        <button className="secondary" onClick={() => analyze(true)} disabled={!progress.some(d => ["error","cancelled"].includes(d?.status))}>Repetir somente arquivos com falha</button>
-        <button className="primary" onClick={() => openResult(lastResult)}>Abrir resultados disponíveis</button>
-      </div>}
+      {lastResult && !busy && (
+        <div className="batch-actions">
+          <button
+            className="secondary"
+            onClick={() => analyze(true)}
+            disabled={
+              !progress.some((d) => ["error", "cancelled"].includes(d?.status))
+            }
+          >
+            Repetir somente arquivos com falha
+          </button>
+          {lastResult.closings.length > 0 ? (
+            <button className="primary" onClick={() => openResult(lastResult)}>
+              Abrir resultados disponíveis
+            </button>
+          ) : (
+            <Link className="secondary" to="/suporte">
+              Ver quais documentos são aceitos
+            </Link>
+          )}
+        </div>
+      )}
       {busy && (
         <button
           className="secondary cancel-analysis"
@@ -247,8 +302,9 @@ export default function Upload() {
         </button>
       )}
       <div className="privacy-hint">
-        <ShieldCheck size={14} /> Documentos processados no servidor desta instalação,
-        sem serviços externos. Arquivos temporários descartados após a leitura.
+        <ShieldCheck size={14} /> Documentos processados no servidor desta
+        instalação, sem serviços externos. Arquivos temporários descartados após
+        a leitura.
       </div>
     </section>
   );

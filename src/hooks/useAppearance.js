@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { resolvePerformance } from '../services/preferences.js';
+import { resolvePerformance } from "../services/preferences.js";
 
 export function useAppearance(prefs) {
   useEffect(() => {
@@ -14,16 +14,23 @@ export function useAppearance(prefs) {
             : "light"
           : prefs.theme;
       root.dataset.accent = prefs.accent;
-      const performance=resolvePerformance(prefs,navigator);
-      root.dataset.performance=performance;
-      root.dataset.surface=prefs.surface;
-      root.dataset.density=prefs.density;
-      root.dataset.colorDepth=prefs.colorDepth;
-      root.dataset.inactive=String(prefs.pauseWhenHidden && document.hidden);
-      root.style.setProperty('--font-scale',prefs.fontScale/100);
-      root.style.fontSize=`${14*prefs.fontScale/100}px`;
+      const performance = resolvePerformance(prefs, navigator);
+      root.dataset.performance = performance;
+      root.dataset.surface = prefs.surface;
+      root.dataset.density = prefs.density;
+      root.dataset.colorDepth = prefs.colorDepth;
+      root.dataset.tilt3d = String(prefs.tilt3d);
+      root.dataset.tiltStrength = String(prefs.tiltStrength);
+      root.dataset.orbitEffects = String(prefs.orbitEffects);
+      root.style.setProperty("--effect-speed", `${prefs.effectSpeed}s`);
+      root.dataset.inactive = String(prefs.pauseWhenHidden && document.hidden);
+      root.style.setProperty("--font-scale", prefs.fontScale / 100);
+      root.style.fontSize = `${(14 * prefs.fontScale) / 100}px`;
       root.dataset.motion =
-        prefs.animation === "off" || prefs.reduceMotion || motion.matches || performance === 'eco'
+        prefs.animation === "off" ||
+        prefs.reduceMotion ||
+        motion.matches ||
+        performance === "eco"
           ? "reduce"
           : "normal";
       root.dataset.animation = prefs.animation;
@@ -38,13 +45,13 @@ export function useAppearance(prefs) {
     apply();
     theme.addEventListener("change", apply);
     motion.addEventListener("change", apply);
-    document.addEventListener('visibilitychange',apply);
-    navigator.connection?.addEventListener('change',apply);
+    document.addEventListener("visibilitychange", apply);
+    navigator.connection?.addEventListener("change", apply);
     return () => {
       theme.removeEventListener("change", apply);
       motion.removeEventListener("change", apply);
-      document.removeEventListener('visibilitychange',apply);
-      navigator.connection?.removeEventListener('change',apply);
+      document.removeEventListener("visibilitychange", apply);
+      navigator.connection?.removeEventListener("change", apply);
     };
   }, [prefs]);
 }

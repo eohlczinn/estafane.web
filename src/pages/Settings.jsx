@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import {useLocation} from 'react-router-dom';
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useLocation, Link } from "react-router-dom";
 import {
   Settings as SettingsIcon,
   Palette,
@@ -17,10 +17,11 @@ import {
 } from "lucide-react";
 import PaperFormats from "../components/printing/PaperFormats.jsx";
 import { useClosing } from "../context/ClosingContext.jsx";
-import { estefaneProfile } from "../services/profile.js";
+import { useWorkspace } from "../context/workspace.js";
+import WorkspaceSettings from "../components/profile/WorkspaceSettings.jsx";
 import ImportProfiles from "../components/upload/ImportProfiles.jsx";
-import ExperienceSettings from '../components/profile/ExperienceSettings.jsx';
-import {useExperience} from '../context/experience.js';
+import ExperienceSettings from "../components/profile/ExperienceSettings.jsx";
+import { useExperience } from "../context/experience.js";
 function Toggle({ label, checked, onChange, description }) {
   return (
     <label className="settings-toggle">
@@ -73,12 +74,39 @@ function MarginInput({ label, min, max, value, onChange }) {
   );
 }
 export default function Settings() {
-  const location=useLocation();
-  useEffect(()=>{if(location.hash)document.getElementById(location.hash.slice(1))?.scrollIntoView({block:'start'});},[location.hash]);
-  const {record}=useExperience();
+  const location = useLocation();
+  const grid = useRef(null),
+    [search, setSearch] = useState("");
+  const [matches, setMatches] = useState(1);
+  const { profile } = useWorkspace();
+  useLayoutEffect(() => {
+    const term = search
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+    let count = 0;
+    for (const section of grid.current?.children || []) {
+      if (section.tagName !== "SECTION") continue;
+      const match = term
+        ? section.textContent
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .includes(term)
+        : !location.hash || section.id === location.hash.slice(1);
+      section.hidden = !match;
+      if (match) count++;
+    }
+    setMatches(count);
+  }, [location.hash, search]);
+  const { record } = useExperience();
   const { prefs, setPrefs, serverLimits } = useClosing(),
     [error, setError] = useState("");
-  const set = (key, value) => {setPrefs(old=>({ ...old, [key]: value }));if(key==='accent')record('accent',value);if(key==='quoteCategory')record('quotes',value);};
+  const set = (key, value) => {
+    setPrefs((old) => ({ ...old, [key]: value }));
+    if (key === "accent") record("accent", value);
+    if (key === "quoteCategory") record("quotes", value);
+  };
   async function logo(event) {
     const file = event.target.files[0];
     event.target.value = "";
@@ -126,11 +154,30 @@ export default function Settings() {
           <p>Personalize o mercado, o fechamento e seus relatórios.</p>
         </div>
       </div>
+      <label className="settings-search">
+        Encontrar uma configuração
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Busque por efeito, histórico, papel, mercado…"
+        />
+      </label>
       <nav
         className="settings-navigation"
         aria-label="Seções das configurações"
       >
+        <Link
+          to="/configuracoes"
+          onClick={() => setSearch("")}
+          aria-current={!location.hash ? "page" : undefined}
+        >
+          Todas
+        </Link>
         {[
+          ["profundidade", "Efeitos 3D"],
+          ["historico-local", "Histórico"],
+          ["notificacoes-local", "Notificações"],
           ["aparencia", "Aparência"],
           ["efeitos", "Movimento e frases"],
           ["estilos", "Estilos"],
@@ -144,12 +191,27 @@ export default function Settings() {
           ["relatorios", "Relatórios"],
           ["perfil-local", "Perfil"],
         ].map(([id, label]) => (
-          <a key={id} href={"#" + id}>
+          <Link
+            key={id}
+            to={"/configuracoes#" + id}
+            onClick={() => setSearch("")}
+            aria-current={location.hash === "#" + id ? "page" : undefined}
+          >
             {label}
-          </a>
+          </Link>
         ))}
       </nav>
-      <div className="settings-grid settings-complete">
+      {!matches && (
+        <p className="empty-workspace" role="status">
+          Nenhuma configuração encontrada. Tente outra palavra ou escolha
+          “Todas”.
+        </p>
+      )}
+      <div
+        ref={grid}
+        className={`settings-grid settings-complete ${matches === 1 ? "single-section" : ""}`}
+      >
+        <WorkspaceSettings />
         <Section id="aparencia" title="Aparência" Icon={Palette}>
           <p className="setting-label">Tema</p>
           <div className="theme-options" role="group" aria-label="Tema">
@@ -180,7 +242,10 @@ export default function Settings() {
               ["purple", "Roxo"],
               ["blue", "Azul"],
               ["pink", "Rosa"],
-              ["emerald", "Esmeralda"], ["teal", "Turquesa"], ["amber", "Âmbar"], ["coral", "Coral"],
+              ["emerald", "Esmeralda"],
+              ["teal", "Turquesa"],
+              ["amber", "Âmbar"],
+              ["coral", "Coral"],
             ].map(([key, label]) => (
               <button
                 key={key}
@@ -352,7 +417,12 @@ export default function Settings() {
           )}
         </Section>
         <Section id="fechamento" title="Fechamento" Icon={Calculator}>
-          <Toggle label="Explicar o resultado em palavras simples" checked={prefs.simpleResult} onChange={v=>set('simpleResult',v)} description="Mostra quanto deveria estar no caixa, quanto foi contado e o próximo passo."/>
+          <Toggle
+            label="Explicar o resultado em palavras simples"
+            checked={prefs.simpleResult}
+            onChange={(v) => set("simpleResult", v)}
+            description="Mostra quanto deveria estar no caixa, quanto foi contado e o próximo passo."
+          />
           <Toggle
             label="Solicitar confirmação antes de finalizar"
             checked={prefs.confirmBeforeFinish}
@@ -492,26 +562,30 @@ export default function Settings() {
           </p>
         </Section>
         <ImportProfiles />
-        <Section id="perfil-local" title="Perfil da Estefane" Icon={UserRound}>
+        <Section id="perfil-local" title="Meu perfil" Icon={UserRound}>
           <div className="settings-profile">
             <img src="/estefane.jpg" alt="Estefane" />
             <div>
-              <h3>Estefane</h3>
+              <h3>{profile.name}</h3>
               <p>
-                {estefaneProfile.age} anos · {estefaneProfile.city}
+                {profile.age} anos · {profile.city}
               </p>
-              <span>Operadora de caixa</span>
+              <span>{profile.role}</span>
             </div>
           </div>
           <p className="muted">
-            Dados do perfil da Estefane. Os ícones sociais são decorativos e não
-            abrem contas externas.
+            Edite seu nome, cidade, função e links de Instagram, Facebook e
+            WhatsApp na página de perfil.
           </p>
+          <Link to="/perfil" className="secondary">
+            Editar meu perfil e links
+          </Link>
         </Section>
       </div>
       <p className="muted">
-        Preferências salvas automaticamente neste navegador. PDFs, valores
-        financeiros e observações não são gravados no localStorage.
+        Preferências e perfil salvos neste navegador. O histórico guarda os
+        fechamentos em um armazenamento separado, que você pode gerenciar e
+        excluir. Os arquivos originais não são guardados.
       </p>
     </>
   );

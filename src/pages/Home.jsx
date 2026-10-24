@@ -22,7 +22,8 @@ import Upload from "../components/upload/Upload.jsx";
 import Review from "../components/fechamento/Review.jsx";
 import DocumentSource from "../components/fechamento/DocumentSource.jsx";
 import Encouragement from "../components/profile/Encouragement.jsx";
-import Recommendations from '../components/profile/Recommendations.jsx';
+import Recommendations from "../components/profile/Recommendations.jsx";
+import DepthCard from "../components/profile/DepthCard.jsx";
 export default function Home({ reader = false }) {
   const { fields, rules, filename, pages, prefs } = useClosing(),
     calc = calculate(fields, rules);
@@ -39,8 +40,8 @@ export default function Home({ reader = false }) {
           <div className="eyebrow">SIMPLES, SEGURO E ORGANIZADO</div>
           <h1>{reader ? "Importar documentos" : "Fechamento de Caixa"}</h1>
           <p>
-            Envie relatórios e planilhas do mercado para calcular os valores e gerar
-            seu fechamento de caixa.
+            Envie relatórios e planilhas do mercado para calcular os valores e
+            gerar seu fechamento de caixa.
           </p>
         </div>
         <span className="heading-badge">
@@ -96,7 +97,7 @@ export default function Home({ reader = false }) {
           ],
           [WalletCards, "Cartões", calc.cardTotal, "pink", "Débito + crédito"],
         ].map(([Icon, label, value, color, sub]) => (
-          <section className="stat-card" key={label}>
+          <DepthCard className="stat-card" key={label}>
             <span className={`tile ${color}`}>
               <Icon size={26} />
             </span>
@@ -105,7 +106,7 @@ export default function Home({ reader = false }) {
               <strong>{value == null ? "—" : formatMoney(value)}</strong>
             </div>
             <small>{value == null ? "Aguardando leitura" : sub}</small>
-          </section>
+          </DepthCard>
         ))}
       </div>
       <div className="dashboard-grid">

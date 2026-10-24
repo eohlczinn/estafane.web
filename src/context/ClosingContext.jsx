@@ -28,7 +28,7 @@ import {
 const Context = createContext();
 function fresh(prefs) {
   return {
-    id: "manual",
+    id: "manual-" + crypto.randomUUID(),
     fields: applyWorkDefaults(undefined, prefs.market, new Date(), prefs),
     rules: { automatic: true, confirmed: true, cashBasis: "gross" },
     movements: [],
@@ -342,6 +342,13 @@ export function ClosingProvider({ children }) {
           })),
         confirmed: closing.confirmed,
         setConfirmed,
+        confirmReviewed: () => {
+          if (!audit.canConfirm) { setNotice('Resolva as pendências destacadas antes de finalizar.'); return false; }
+          mutate(old => ({ ...old, reviewed: true, confirmed: true }), false);
+          return true;
+        },
+        restoreClosing: (value) => { setBatch(null); setActiveId(null); setManual(audited(value)); setNotice('Histórico reaberto. O cálculo foi conferido novamente; revise antes de emitir.'); },
+        startNew: () => { setBatch(null); setActiveId(null); setManual(fresh(prefs)); setNotice('Novo caixa iniciado. Os registros do histórico foram preservados.'); },
         reviewed: closing.reviewed,
         setReviewed: (value) =>
           mutate((old) => ({ ...old, reviewed: value, confirmed: false })),

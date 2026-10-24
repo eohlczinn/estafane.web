@@ -160,11 +160,20 @@ try {
   const mixed = await checkPDF(scan.output("arraybuffer"));
   assert.equal(mixed.ocr, true);
   assert.equal(mixed.fields.cash.value, 50000);
-  const blank = await checkPDF(new jsPDF().output("arraybuffer"));
-  assert.equal(blank.fields.cash.value, null);
-  assert.equal(blank.calculation.result, "pending");
+  const blankResponse = await upload(new jsPDF().output("arraybuffer"));
+  assert.equal(blankResponse.status, 422);
+  assert.match((await blankResponse.json()).error, /evidências suficientes/);
+  for (const unrelated of [
+    ['CURRICULO', 'Nome: Ana', 'Experiencia profissional: Caixa', 'Pretensao salarial: R$ 2.000,00'],
+    ['NOTA FISCAL', 'Total: 20,00', 'Forma de pagamento: PIX', 'Dinheiro: 20,00'],
+    ['Manual de instrucoes', 'Como instalar a impressora e configurar a rede'],
+  ]) {
+    const response = await upload(document(unrelated).output('arraybuffer'));
+    assert.equal(response.status, 422);
+    assert.match((await response.json()).error, /(?:outro tipo|evidências suficientes)/);
+  }
   console.log(
-    "OK: OCR local de PDF digitalizado, página mista com rodapé textual e documento vazio pendente.",
+    "OK: OCR de PDF digitalizado e página mista; PDF vazio, currículo, nota de compra e manual recusados sem criar caixa.",
   );
   await fs.mkdir("tests/output", { recursive: true });
   await fs.writeFile(

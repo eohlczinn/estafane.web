@@ -3,6 +3,7 @@ import { calculate } from "../../shared/calculation.js";
 import { reconcile } from "./reconciliationService.js";
 import fs from "node:fs/promises";
 import { compareDocuments } from "../../shared/grouping.js";
+import { assessDocument } from "./documentAssessment.js";
 const progress = (info) =>
   process.send?.({ type: "closing-analysis-progress", ...info });
 process.once(
@@ -32,18 +33,43 @@ process.once(
       }
       progress({ stage: "interpreting" });
       const parsed = parsePages(pages, { documentId, importProfiles });
+      const documentAssessment = assessDocument(pages, parsed);
+      if (documentAssessment.status === "unrelated") {
+        const error = new Error(documentAssessment.message);
+        error.name = "DocumentError";
+        error.failureKind = "unrelated";
+        throw error;
+      }
       // A workbook may carry independent complete closings on separate sheets.
       // Split only with explicit identity on every sheet; partial sheets remain
       // complementary observations, and conflicting records stay pending.
       let parts;
-      if (["xlsx","xls","ods"].includes(format) && pages.length > 1) {
-        const candidates = pages.map(p => {
+      if (["xlsx", "xls", "ods"].includes(format) && pages.length > 1) {
+        const candidates = pages.map((p) => {
           const id = `${documentId}:sheet-${p.page}`;
-          const result = parsePages([p], {documentId:id,importProfiles});
-          return {id,...result,pages:[p],format,calculation:calculate(result.fields,result.rules),audit:reconcile(result)};
+          const result = parsePages([p], { documentId: id, importProfiles });
+          return {
+            id,
+            ...result,
+            pages: [p],
+            format,
+            calculation: calculate(result.fields, result.rules),
+            audit: reconcile(result),
+          };
         });
-        if (candidates.every(c => ["market","operator","register","date"].every(k => c.fields[k].value && c.fields[k].status !== "ambiguous")) &&
-          candidates.some((c,i) => candidates.some((other,j) => j > i && compareDocuments(c,other) === "independent")))
+        if (
+          candidates.every((c) =>
+            ["market", "operator", "register", "date"].every(
+              (k) => c.fields[k].value && c.fields[k].status !== "ambiguous",
+            ),
+          ) &&
+          candidates.some((c, i) =>
+            candidates.some(
+              (other, j) =>
+                j > i && compareDocuments(c, other) === "independent",
+            ),
+          )
+        )
           parts = candidates;
       }
       progress({ stage: "calculating" });
@@ -56,6 +82,7 @@ process.once(
           pages,
           format,
           parts,
+          documentAssessment,
           ...parsed,
           calculation,
           audit: reconcile(parsed),
@@ -67,7 +94,11 @@ process.once(
         {
           type: "closing-analysis-result",
           ok: false,
-          error: { name: error.name, message: error.message, failureKind:error.failureKind },
+          error: {
+            name: error.name,
+            message: error.message,
+            failureKind: error.failureKind,
+          },
         },
         () => process.exit(1),
       );

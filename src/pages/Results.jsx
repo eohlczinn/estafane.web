@@ -8,8 +8,10 @@ import { formatMoney } from "../../shared/money.js";
 import { statusLabels } from "../services/report.js";
 import Review from "../components/fechamento/Review.jsx";
 import DocumentSource from "../components/fechamento/DocumentSource.jsx";
-import SimpleResult from '../components/fechamento/SimpleResult.jsx';
+import SimpleResult from "../components/fechamento/SimpleResult.jsx";
+import { useWorkspace } from "../context/workspace.js";
 export default function Results() {
+  const { saveClosing, saving } = useWorkspace();
   const { fields, filename, audit, confirmed, batch } = useClosing(),
     calc = audit.calculation;
   return (
@@ -26,6 +28,18 @@ export default function Results() {
             finalizar.
           </p>
         </div>
+      </div>
+      <div className="archive-toolbar">
+        <button
+          className="secondary"
+          onClick={() => saveClosing()}
+          disabled={saving}
+        >
+          {saving ? "Salvando…" : "Guardar no histórico"}
+        </button>
+        <Link className="secondary" to="/historico">
+          Ver histórico e iniciar outro caixa
+        </Link>
       </div>
       <div className={`result-overview ${calc.result}`}>
         <span className="result-chip">

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Calculator,
   Check,
@@ -110,6 +110,37 @@ function Resolution({ issue }) {
     </div>
   );
 }
+function QuickCorrections() {
+  const { audit, closing } = useClosing();
+  const needed = [
+    ...new Set(
+      audit.issues
+        .map((i) => i.field)
+        .filter((k) => k && k !== "counted" && k in allFields),
+    ),
+  ].join(",");
+  const [keys, setKeys] = useState(() => needed.split(",").filter(Boolean));
+  useEffect(() => {
+    setKeys((old) => [
+      ...new Set([...old, ...needed.split(",").filter(Boolean)]),
+    ]);
+  }, [needed]);
+  if (!keys.length) return null;
+  return (
+    <details className="correction-details" open>
+      <summary>Correções rápidas deste caixa</summary>
+      <p className="muted">
+        Campos apontados pela auditoria. Informe apenas valores conferidos no
+        original. Eles continuam aqui durante a digitação.
+      </p>
+      <div className="field-grid">
+        {keys.map((key) => (
+          <Field fieldKey={key} key={closing.id + key} />
+        ))}
+      </div>
+    </details>
+  );
+}
 export default function Review() {
   const {
       fields,
@@ -120,10 +151,8 @@ export default function Review() {
       prefs,
       notes,
       setNotes,
-      reviewed,
-      setReviewed,
       confirmed,
-      setConfirmed,
+      confirmReviewed,
       setNotice,
       undo,
       saveImportProfile,
@@ -156,6 +185,7 @@ export default function Review() {
       </div>
       {prefs.showCalculation && <CalculationDetails />}
       <MovementDetails />
+      <QuickCorrections key={closing.id} />
       {prefs.requireUnrecognized &&
         ["pix", "debit", "credit", "voucher", "other", "shift"].some(
           (k) => fields[k].value == null,
@@ -289,16 +319,20 @@ export default function Review() {
           />
         </label>
       )}
-      {prefs.confirmBeforeFinish && (
-        <label className="checkbox confirmation">
-          <input
-            type="checkbox"
-            checked={reviewed}
-            onChange={(e) => setReviewed(e.target.checked)}
-          />
-          Conferi os valores, as origens e as informações deste fechamento.
-        </label>
-      )}
+      <div className="automatic-check panel">
+        <h3>Conferência automática</h3>
+        <p>
+          {audit.canConfirm
+            ? "Identificação, dados essenciais, pagamentos e movimentações passaram pelas verificações disponíveis."
+            : audit.issues.length +
+              " pendência(s) precisam de atenção. A lista acima mostra o que corrigir."}
+        </p>
+        <p>
+          {audit.canConfirm
+            ? "Confira o resultado e finalize em um toque. Falta ou sobra continua registrada no relatório."
+            : "Nenhum valor ausente é tratado como zero sem evidência."}
+        </p>
+      </div>
       <div className="review-actions">
         <span>
           {confirmed
@@ -307,20 +341,18 @@ export default function Review() {
         </span>
         <button
           className="primary"
-          disabled={
-            !audit.canConfirm ||
-            (prefs.confirmBeforeFinish && !reviewed) ||
-            confirmed
-          }
+          disabled={!audit.canConfirm || confirmed}
           onClick={() => {
-            if (setConfirmed(true)) {
+            if (confirmReviewed()) {
               setNotice("Fechamento confirmado. Você pode salvar ou imprimir.");
               navigate("/relatorio");
             }
           }}
         >
           <Check size={17} />
-          Confirmar fechamento
+          {prefs.confirmBeforeFinish
+            ? "Conferi os dados · confirmar fechamento"
+            : "Confirmar fechamento"}
         </button>
       </div>
       <div className="closing-export-actions">

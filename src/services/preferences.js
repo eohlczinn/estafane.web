@@ -1,7 +1,11 @@
 export const preferenceKey = "estefane.preferences";
 export function resolvePerformance(prefs, device = {}) {
-  if(prefs.performance !== 'auto') return prefs.performance;
-  return device.connection?.saveData || (device.deviceMemory > 0 && device.deviceMemory <= 4) || (device.hardwareConcurrency > 0 && device.hardwareConcurrency <= 4) ? 'eco' : 'balanced';
+  if (prefs.performance !== "auto") return prefs.performance;
+  return device.connection?.saveData ||
+    (device.deviceMemory > 0 && device.deviceMemory <= 4) ||
+    (device.hardwareConcurrency > 0 && device.hardwareConcurrency <= 4)
+    ? "eco"
+    : "balanced";
 }
 export const defaultPreferences = {
   theme: "system",
@@ -52,6 +56,14 @@ export const defaultPreferences = {
   colorDepth: "balanced",
   pauseWhenHidden: true,
   simpleResult: true,
+  tilt3d: true,
+  orbitEffects: true,
+  tiltStrength: 5,
+  effectSpeed: 14,
+  autoHistory: true,
+  historyLimit: 50,
+  notificationsEnabled: true,
+  notifyHistory: true,
 };
 const enums = {
   theme: ["light", "dark", "system"],
@@ -87,7 +99,15 @@ const booleans = [
   "warnDuplicates",
   "showExtraction",
   "autoGroup",
-  "personalRecommendations", "learnUsage", "pauseWhenHidden", "simpleResult",
+  "personalRecommendations",
+  "learnUsage",
+  "pauseWhenHidden",
+  "simpleResult",
+  "tilt3d",
+  "orbitEffects",
+  "autoHistory",
+  "notificationsEnabled",
+  "notifyHistory",
 ];
 export function normalizePreferences(value = {}) {
   const result = { ...defaultPreferences };
@@ -108,6 +128,9 @@ export function normalizePreferences(value = {}) {
     ["memoryDays", 7, 90],
     ["healthInterval", 15, 120],
     ["fontScale", 90, 120],
+    ["tiltStrength", 2, 10],
+    ["effectSpeed", 8, 30],
+    ["historyLimit", 10, 100],
   ])
     if (Number.isFinite(Number(value[key])))
       result[key] = Math.min(
