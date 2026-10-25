@@ -4,6 +4,7 @@ import { sumCents } from "../../shared/movements.js";
 import {
   extractFinanceValue,
   financialAmountTokens,
+  hasUncertainAmount,
 } from "./financialObservations.js";
 import { formatMoney } from "../../shared/money.js";
 
@@ -27,6 +28,15 @@ export function reconcilePaymentSection({
   extractionIssues,
   documentId,
 }) {
+  if (
+    lines.some(
+      (line) =>
+        line.section === "payments" &&
+        hasUncertainAmount(line.text) &&
+        /\d/.test(line.text),
+    )
+  )
+    return;
   const unknownWholeRows = lines.filter((line) => {
     if (line.section !== "payments" || line.metadataHeader) return false;
     const text = layoutLine(line.text),

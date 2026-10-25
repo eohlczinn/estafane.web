@@ -1,6 +1,7 @@
 import { emptyFields } from "./fields.js";
 import { movementTotals, movementTypes } from "./movements.js";
 import { reconcile } from "./reconciliation.js";
+import { mergeTransactions } from "./transactionMerge.js";
 const norm = (v) =>
   String(v ?? "")
     .normalize("NFD")
@@ -35,9 +36,10 @@ export function compareDocuments(a, b) {
   return "uncertain";
 }
 export function mergeDocuments(documents, id) {
+  const receiptMerge = mergeTransactions(documents);
   const fields = emptyFields(),
     movements = [],
-    mergeIssues = [],
+    mergeIssues = [...receiptMerge.issues],
     declarations = documents.flatMap((d) => d.declarations || []);
   for (const key of Object.keys(fields)) {
     const candidates = documents.flatMap((d) => {
@@ -188,8 +190,11 @@ export function mergeDocuments(documents, id) {
       d.pages.map((p) => ({ ...p, documentId: d.id, filename: d.filename })),
     ),
     warnings: documents.flatMap((d) => d.warnings || []),
-    transactions: documents.flatMap((d) => d.transactions || []),
-    normalizationNotes: documents.flatMap((d) => d.normalizationNotes || []),
+    transactions: receiptMerge.transactions,
+    normalizationNotes: [
+      ...documents.flatMap((d) => d.normalizationNotes || []),
+      ...receiptMerge.notes,
+    ],
     inventory: {
       version: 1,
       detected: documents.some((d) => d.inventory?.detected),

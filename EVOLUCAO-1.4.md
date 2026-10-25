@@ -11,7 +11,7 @@ O importador separa fechamentos por referência e identificação, concilia cupo
 - `pdfParser.js` coordena os leitores e reutiliza as regras financeiras existentes. `ledgerProfile.js` deriva zero de devoluções somente quando a seção física está delimitada e íntegra; cancelamentos já incluídos nas vendas líquidas não são descontados novamente.
 - `documentScopes.js` separa páginas pela identidade do fechamento e preserva continuações. Capa e notas ficam disponíveis como contexto. `tabularScopes.js` usa o vocabulário de colunas existente para separar linhas completas de CSV/Excel; recusa divisões especulativas de cupons, estoque e registros incompletos.
 - `pdfWorker.js` processa cada escopo isoladamente. Um arquivo com vários caixas é um contêiner, sem total financeiro próprio. `batchAnalyzer.js` distingue arquivos originais (`sourceDocuments`) dos fechamentos expandidos, preservando progresso, estoque e páginas de contexto.
-- `shared/grouping.js` preserva cupons, origem e observações na passagem para a conferência. O motor de cálculo/auditoria continua compartilhado pelo servidor e navegador.
+- `shared/grouping.js` e `transactionMerge.js` preservam cupons, origem e observações na passagem para a conferência. A conciliação entre arquivos do mesmo fechamento também exclui cópias equivalentes e bloqueia identificadores com valores/formas conflitantes, mesmo quando os totais coincidem. O motor de cálculo/auditoria continua compartilhado pelo servidor e navegador.
 - `AnalysisEvidence.jsx`, `InventorySummary.jsx` e `BatchResults.jsx` mostram o que foi reconhecido, os cupons excluídos, dados ausentes e quantidades. `archive.js` preserva essas evidências no histórico; `report.js` inclui a conciliação no relatório.
 
 ## Regressões verificáveis
@@ -35,4 +35,4 @@ npm run build
 
 ## Limites explícitos
 
-Reconhecimento determinístico não compreende qualquer documento arbitrário. Layouts sem evidências suficientes, categorias desconhecidas, fórmulas não verificadas e valores divergentes permanecem pendentes. OCR permite cálculo provisório e exige comparação com a imagem original. Arquivos sem contagem não recebem diferença inventada. O histórico local continua sem sincronização entre dispositivos e os limites do servidor permanecem em vigor.
+Reconhecimento determinístico não compreende qualquer documento arbitrário. Layouts sem evidências suficientes, categorias desconhecidas, previsões, alternativas de valor, fórmulas não verificadas e valores divergentes permanecem pendentes. OCR permite cálculo provisório e exige comparação com a imagem original. Arquivos sem contagem não recebem diferença inventada. O histórico local continua sem sincronização entre dispositivos e os limites do servidor permanecem em vigor.

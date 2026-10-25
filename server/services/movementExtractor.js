@@ -1,7 +1,10 @@
 import { parseMoney } from "../../shared/money.js";
 import { movementTypes } from "../../shared/movements.js";
 import { normalize } from "./parserRules.js";
-import { financialAmountTokens } from "./financialObservations.js";
+import {
+  financialAmountTokens,
+  hasUncertainAmount,
+} from "./financialObservations.js";
 export const movementPatterns = {
   withdrawal:
     /^(?:(?:sub)?total (?:de )?)?(?:sangrias?|retiradas?(?: de numerario)?|recolhimentos?|saida do caixa)\b/,
@@ -59,6 +62,7 @@ export function extractMovements(lines, documentId) {
     issues = [];
   let section = null;
   for (const line of lines) {
+    if (hasUncertainAmount(line.text)) continue;
     const n = normalize(line.text);
     let entry = Object.entries(movementPatterns).find(([, pattern]) =>
       pattern.test(n),

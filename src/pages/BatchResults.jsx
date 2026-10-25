@@ -154,27 +154,31 @@ export default function BatchResults() {
             Consolidado / imprimir
           </Link>
         )}
-        <button
-          className="secondary"
-          disabled={!summary.validatedCount || saving}
-          onClick={saveAll}
-        >
-          <Download size={18} />
-          {saving ? "Gerando ZIP…" : "Salvar individuais confirmados (ZIP)"}
-        </button>
-        <button
-          className="secondary"
-          disabled={!selected.length}
-          onClick={() =>
-            navigate(
-              "/imprimir?scope=selected&ids=" +
-                encodeURIComponent(selected.join(",")),
-            )
-          }
-        >
-          <Printer size={18} />
-          Imprimir selecionados ({selected.length})
-        </button>
+        {!stockOnly && (
+          <>
+            <button
+              className="secondary"
+              disabled={!summary.validatedCount || saving}
+              onClick={saveAll}
+            >
+              <Download size={18} />
+              {saving ? "Gerando ZIP…" : "Salvar individuais confirmados (ZIP)"}
+            </button>
+            <button
+              className="secondary"
+              disabled={!selected.length}
+              onClick={() =>
+                navigate(
+                  "/imprimir?scope=selected&ids=" +
+                    encodeURIComponent(selected.join(",")),
+                )
+              }
+            >
+              <Printer size={18} />
+              Imprimir selecionados ({selected.length})
+            </button>
+          </>
+        )}
       </div>
       <div className="closing-grid">
         {batch.closings.map((c) => (

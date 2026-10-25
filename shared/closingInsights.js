@@ -89,6 +89,13 @@ export function documentOverview(closing) {
   const sources = Object.values(closing.fields || {})
     .flatMap((f) => f.sources || [f.source])
     .filter(Boolean);
+  const moneySources = [
+    ...Object.entries(closing.fields || {})
+      .filter(([key]) => key in moneyFields)
+      .flatMap(([, field]) => field.sources || [field.source]),
+    ...(closing.transactions || []).map((t) => t.source),
+    ...(closing.movements || []).map((m) => m.source),
+  ].filter(Boolean);
   const unresolved = closing.unparsedLines || [];
   return (closing.pages || []).map((p) => {
     const belongs = (s) =>
@@ -105,8 +112,9 @@ export function documentOverview(closing) {
       )
       .map((l) => ({ title: l.text.trim(), line: l.line }))
       .slice(0, 20);
-    const financial = lines.filter((l) =>
-      /R\$\s*[-\d]|\d,\d{2}\b/.test(l.text),
+    const moneyLines = new Set(moneySources.filter(belongs).map((s) => s.line));
+    const financial = lines.filter(
+      (l) => /R\$\s*[-\d]|\d,\d{2}\b/.test(l.text) || moneyLines.has(l.line),
     ).length;
     return {
       page: p.page,

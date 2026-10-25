@@ -2,6 +2,7 @@ import { emptyFields, allFields } from "../../shared/fields.js";
 import {
   splitFinancialPairs,
   financialAmountTokens,
+  hasUncertainAmount,
 } from "./financialObservations.js";
 import {
   extractPaymentTransactions,
@@ -275,6 +276,7 @@ export function parsePages(
     let recognized = false;
     for (const [key, rule] of Object.entries(moneyRules)) {
       if (
+        hasUncertainAmount(clean) ||
         !rule.test(n) ||
         (key === "cash" && /contado/.test(n)) ||
         (key === "cash" &&
@@ -362,12 +364,16 @@ export function parsePages(
         id: `${documentId}:${line.id}:unknown`,
         source,
         text: original,
-        value: tokens.length === 1 ? tokens[0].value : null,
+        value:
+          tokens.length === 1 && !hasUncertainAmount(clean)
+            ? tokens[0].value
+            : null,
         label,
         layoutKey,
         suggestions: suggestCategories(clean),
-        reason:
-          tokens.length !== 1
+        reason: hasUncertainAmount(clean)
+          ? "A linha informa uma previsão ou alternativas; confirme o valor realizado antes de classificar."
+          : tokens.length !== 1
             ? "Há vários valores ou um valor incompleto sem coluna financeira identificada."
             : "O contexto não comprova a categoria financeira deste valor.",
       });

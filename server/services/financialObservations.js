@@ -144,3 +144,9 @@ export function monetaryCell(text) {
   // Explicitly selected value-column cells cannot contain IDs or quantities.
   return extractFinanceValue(String(text)).length === 1;
 }
+
+export function hasUncertainAmount(text) {
+  return /\b(?:ou|talvez|aproximad[oa]s?|estimad[oa]s?|previst[oa]s?|projetad[oa]s?)\b/.test(
+    normalizedLabel(String(text)).text,
+  );
+}

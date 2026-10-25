@@ -91,6 +91,19 @@ it("não perde silenciosamente um rótulo financeiro com número ambíguo", () =
   expect(p.fields.pix.value).toBeNull();
   expect(p.unparsedLines).toHaveLength(1);
 });
+it.each([
+  "PIX foi 500 ou 600,00",
+  "PIX foi 500,00 ou 600",
+  "PIX previsto: 500,00",
+  "Sangria estimada: 10,00",
+])("mantém previsão ou alternativas pendentes: %s", (text) => {
+  const p = parse(text);
+  expect(p.fields.pix.value).toBeNull();
+  expect(p.fields.withdrawals.value).toBeNull();
+  expect(p.unparsedLines).toHaveLength(1);
+  expect(p.unparsedLines[0].value).toBeNull();
+  expect(reconcile(p).canConfirm).toBe(false);
+});
 it("mantém o resumo quando faltam cupons identificáveis, sem comparar uma soma parcial como total", () => {
   const p = parse(
     context +
