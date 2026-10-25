@@ -11,6 +11,7 @@ import { reconcile } from "../../shared/reconciliation.js";
 import { summarizeBatch } from "../../shared/batch.js";
 import {
   mergeDocuments,
+  groupDocuments,
   resolveGroupingDecision,
 } from "../../shared/grouping.js";
 import {
@@ -142,16 +143,21 @@ export function ClosingProvider({ children }) {
       }
     }
     check();
-    const interval = resolvePerformance(prefs,navigator) === 'eco' ? Math.max(60,prefs.healthInterval) : prefs.healthInterval;
+    const interval =
+      resolvePerformance(prefs, navigator) === "eco"
+        ? Math.max(60, prefs.healthInterval)
+        : prefs.healthInterval;
     const timer = setInterval(check, interval * 1000);
-    const visible = () => { if(!document.hidden) check(); };
-    document.addEventListener('visibilitychange',visible);
+    const visible = () => {
+      if (!document.hidden) check();
+    };
+    document.addEventListener("visibilitychange", visible);
     return () => {
       stopped = true;
       clearInterval(timer);
-      document.removeEventListener('visibilitychange',visible);
+      document.removeEventListener("visibilitychange", visible);
     };
-  }, [prefs.performance,prefs.healthInterval,prefs.pauseWhenHidden]);
+  }, [prefs.performance, prefs.healthInterval, prefs.pauseWhenHidden]);
   function mutate(fn, record = true) {
     const apply = (old) =>
       audited(record ? rememberChange(old, fn(old)) : fn(old));
@@ -179,7 +185,9 @@ export function ClosingProvider({ children }) {
     setActiveId(data.closings[0]?.id || null);
     setBackend("online");
     setNotice(
-      "Documentos analisados. Confira cada fechamento antes de emitir.",
+      data.closings.length
+        ? "Documentos analisados. Confira cada fechamento antes de emitir."
+        : "Estoque analisado. Confira as quantidades e pendências no resultado do lote.",
     );
   }
   function load(data) {
@@ -189,13 +197,20 @@ export function ClosingProvider({ children }) {
       id: data.id || "single",
       pages: data.pages || [],
     };
-    const c = mergeDocuments([doc], "closing-" + doc.id);
+    const parts = doc.parts?.map((part, index) => ({
+      ...part,
+      id: part.id || `${doc.id}:part-${index + 1}`,
+      partOf: doc.id,
+      hash: doc.hash,
+      filename: `${doc.filename} · ${part.partLabel || part.label || "páginas " + part.pages.map((p) => p.page).join(", ")}`,
+      status: part.audit?.canConfirm ? "completed" : "review_required",
+    }));
+    const grouped = groupDocuments(parts?.length ? parts : [doc]);
     loadBatch({
       version: 2,
       id: "single",
-      documents: [doc],
-      closings: [c],
-      suggestions: [],
+      documents: parts?.length ? [doc, ...parts] : [doc],
+      ...grouped,
     });
   }
   function setConfirmed(value) {
@@ -343,12 +358,29 @@ export function ClosingProvider({ children }) {
         confirmed: closing.confirmed,
         setConfirmed,
         confirmReviewed: () => {
-          if (!audit.canConfirm) { setNotice('Resolva as pendências destacadas antes de finalizar.'); return false; }
-          mutate(old => ({ ...old, reviewed: true, confirmed: true }), false);
+          if (!audit.canConfirm) {
+            setNotice("Resolva as pendências destacadas antes de finalizar.");
+            return false;
+          }
+          mutate((old) => ({ ...old, reviewed: true, confirmed: true }), false);
           return true;
         },
-        restoreClosing: (value) => { setBatch(null); setActiveId(null); setManual(audited(value)); setNotice('Histórico reaberto. O cálculo foi conferido novamente; revise antes de emitir.'); },
-        startNew: () => { setBatch(null); setActiveId(null); setManual(fresh(prefs)); setNotice('Novo caixa iniciado. Os registros do histórico foram preservados.'); },
+        restoreClosing: (value) => {
+          setBatch(null);
+          setActiveId(null);
+          setManual(audited(value));
+          setNotice(
+            "Histórico reaberto. O cálculo foi conferido novamente; revise antes de emitir.",
+          );
+        },
+        startNew: () => {
+          setBatch(null);
+          setActiveId(null);
+          setManual(fresh(prefs));
+          setNotice(
+            "Novo caixa iniciado. Os registros do histórico foram preservados.",
+          );
+        },
         reviewed: closing.reviewed,
         setReviewed: (value) =>
           mutate((old) => ({ ...old, reviewed: value, confirmed: false })),

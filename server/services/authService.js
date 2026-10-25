@@ -55,8 +55,11 @@ export function verifyPassword(password, storedHashOrPlain) {
  * Valida credenciais do usuário.
  */
 export function checkCredentials(username, password) {
-  if (typeof username === "string" && username.length > 180 || typeof password === "string" && password.length > 512)
-    return {ok:false,error:"Usuário ou senha incorretos."};
+  if (
+    (typeof username === "string" && username.length > 180) ||
+    (typeof password === "string" && password.length > 512)
+  )
+    return { ok: false, error: "Usuário ou senha incorretos." };
   if (
     !username ||
     !password ||

@@ -298,7 +298,7 @@ app.post(
         version: contractVersion,
         id,
         hash,
-        status: result.audit.canConfirm ? "completed" : "review_required",
+        status: result.documentKind==='inventory' ? (result.inventory.issues.length||result.inventory.items.some(item=>item.issues.length)?'review_required':'completed') : result.audit.canConfirm ? "completed" : "review_required",
         ...result,
         filename: safeFilename(file.originalname),
         ocr: result.pages.some((p) => p.ocr),

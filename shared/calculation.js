@@ -147,6 +147,7 @@ export function calculate(fields, rules = {}) {
           ? "over"
           : "balanced";
   return {
+    knownPaymentsTotal,
     sales,
     cardTotal,
     paymentTotal,

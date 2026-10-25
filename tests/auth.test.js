@@ -52,7 +52,11 @@ describe("Serviço de Autenticação e Segurança (authService)", () => {
   });
 
   it("cria e valida token de sessão com HMAC-SHA256", () => {
-    const user = { username: "estefane", name: "Estefane", role: "Operadora de caixa" };
+    const user = {
+      username: "estefane",
+      name: "Estefane",
+      role: "Operadora de caixa",
+    };
     const token = createSessionToken(user);
     expect(typeof token).toBe("string");
     expect(token).toContain(".");
@@ -75,7 +79,8 @@ describe("Serviço de Autenticação e Segurança (authService)", () => {
   });
 
   it("analisa cookies e monta cabeçalhos Set-Cookie seguros", () => {
-    const cookieHeader = "outra_coisa=123; estefane_session=meu-token-aqui; tema=dark";
+    const cookieHeader =
+      "outra_coisa=123; estefane_session=meu-token-aqui; tema=dark";
     const cookies = parseCookies(cookieHeader);
     expect(cookies.estefane_session).toBe("meu-token-aqui");
     expect(cookies.tema).toBe("dark");
@@ -91,7 +96,6 @@ describe("Serviço de Autenticação e Segurança (authService)", () => {
     expect(clearCookie).toContain("Max-Age=0");
     expect(clearCookie).toContain("HttpOnly");
   });
-
 });
 
 describe("Validador de Origem e Domínio Railway (originValidator)", () => {
@@ -104,7 +108,10 @@ describe("Validador de Origem e Domínio Railway (originValidator)", () => {
     const original = process.env.RAILWAY_PUBLIC_DOMAIN;
     try {
       process.env.RAILWAY_PUBLIC_DOMAIN = "estefane-web.up.railway.app";
-      const reqHttps = { get: (h) => (h === "origin" ? "https://estefane-web.up.railway.app" : undefined) };
+      const reqHttps = {
+        get: (h) =>
+          h === "origin" ? "https://estefane-web.up.railway.app" : undefined,
+      };
       expect(isAllowedOrigin(reqHttps)).toBe(true);
     } finally {
       if (original === undefined) delete process.env.RAILWAY_PUBLIC_DOMAIN;
@@ -115,7 +122,12 @@ describe("Validador de Origem e Domínio Railway (originValidator)", () => {
   it("permite mesma origem do Host da requisição", () => {
     const req = {
       protocol: "https",
-      get: (h) => (h === "origin" ? "https://caixa.meudominio.com" : h === "host" ? "caixa.meudominio.com" : undefined),
+      get: (h) =>
+        h === "origin"
+          ? "https://caixa.meudominio.com"
+          : h === "host"
+            ? "caixa.meudominio.com"
+            : undefined,
     };
     expect(isAllowedOrigin(req)).toBe(true);
   });
@@ -123,7 +135,12 @@ describe("Validador de Origem e Domínio Railway (originValidator)", () => {
   it("rejeita origens externas maliciosas não autorizadas", () => {
     const req = {
       protocol: "https",
-      get: (h) => (h === "origin" ? "https://site-malicioso.com" : h === "host" ? "app.railway.app" : undefined),
+      get: (h) =>
+        h === "origin"
+          ? "https://site-malicioso.com"
+          : h === "host"
+            ? "app.railway.app"
+            : undefined,
     };
     expect(isAllowedOrigin(req)).toBe(false);
   });
@@ -144,7 +161,10 @@ describe("Endpoints de Autenticação e Proteção da API (/api/auth e /api/fech
     const res = await fetch(`${baseUrl}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "estefane", password: "senhaErrada123" }),
+      body: JSON.stringify({
+        username: "estefane",
+        password: "senhaErrada123",
+      }),
     });
     expect(res.status).toBe(401);
     const data = await res.json();
@@ -154,12 +174,15 @@ describe("Endpoints de Autenticação e Proteção da API (/api/auth e /api/fech
   it("permite login correto imediatamente após várias senhas erradas, sem espera de 15 minutos", async () => {
     const original = process.env.ADMIN_PASSWORD;
     process.env.ADMIN_PASSWORD = "senha-de-teste-sem-bloqueio";
-    const login = (password) => fetch(`${baseUrl}/api/auth/login`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "estefane", password }),
-    });
+    const login = (password) =>
+      fetch(`${baseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: "estefane", password }),
+      });
     try {
-      for (let i = 0; i < 8; i++) expect((await login("incorreta")).status).toBe(401);
+      for (let i = 0; i < 8; i++)
+        expect((await login("incorreta")).status).toBe(401);
       const correct = await login("senha-de-teste-sem-bloqueio");
       expect(correct.status).toBe(200);
       expect(correct.headers.get("set-cookie")).toContain("HttpOnly");
@@ -191,7 +214,10 @@ describe("Endpoints de Autenticação e Proteção da API (/api/auth e /api/fech
       const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: "estefane", password: "SenhaTesteVitest2026" }),
+        body: JSON.stringify({
+          username: "estefane",
+          password: "SenhaTesteVitest2026",
+        }),
       });
       expect(loginRes.status).toBe(200);
       const setCookie = loginRes.headers.get("set-cookie");
@@ -235,12 +261,20 @@ describe("Endpoints de Autenticação e Proteção da API (/api/auth e /api/fech
 
     try {
       const doc = new jsPDF();
-      doc.text(["Mercado: TESTE", "Total de vendas: 100,00", "Dinheiro: 100,00"], 10, 10);
+      doc.text(
+        ["Mercado: TESTE", "Total de vendas: 100,00", "Dinheiro: 100,00"],
+        10,
+        10,
+      );
       const pdfBytes = doc.output("arraybuffer");
 
       const makeUpload = (cookie) => {
         const form = new FormData();
-        form.append("pdf", new Blob([pdfBytes], { type: "application/pdf" }), "teste.pdf");
+        form.append(
+          "pdf",
+          new Blob([pdfBytes], { type: "application/pdf" }),
+          "teste.pdf",
+        );
         const headers = {};
         if (cookie) headers.Cookie = cookie;
         return fetch(`${baseUrl}/api/fechamento/analisar`, {
@@ -257,7 +291,10 @@ describe("Endpoints de Autenticação e Proteção da API (/api/auth e /api/fech
       expect(unauthData.error).toContain("Acesso não autorizado");
 
       // 2. Com sessão válida gerada
-      const token = createSessionToken({ username: "estefane", name: "Estefane" });
+      const token = createSessionToken({
+        username: "estefane",
+        name: "Estefane",
+      });
       const authRes = await makeUpload(`${SESSION_COOKIE_NAME}=${token}`);
       expect(authRes.status).toBe(200);
       const authData = await authRes.json();

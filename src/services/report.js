@@ -152,14 +152,47 @@ export function reportRows(fields, calc, prefs = {}) {
         `SHA-256 ${d.hash?.slice(0, 16) || "não disponível"} · ${d.id}`,
       ]),
     );
+  if (calc.transactions?.length) {
+    const unique = calc.transactions.filter(
+      (t) => !t.duplicateOf && t.status !== "conflict",
+    );
+    const repeated = calc.transactions.filter((t) => t.duplicateOf);
+    rows.push(
+      ["", "CONCILIAÇÃO DOS CUPONS"],
+      [
+        "Cupons",
+        `${unique.length} válidos; ${repeated.length} repetidos excluídos da soma`,
+      ],
+    );
+    for (const t of repeated)
+      rows.push([
+        `Cupom repetido: ${t.operationId}`,
+        `${formatMoney(t.amountCents)} · ${sourceLocation(t.source)} · contado uma única vez`,
+      ]);
+  }
+  for (const note of calc.normalizationNotes || [])
+    if (note.code === "gross_net_reconciled")
+      rows.push(["Conciliação de vendas", note.message]);
   const history = (calc.history || []).filter((h) =>
-    ["resolution", "manual_grouping", "movement", "classification", "undo"].includes(h.kind),
+    [
+      "resolution",
+      "manual_grouping",
+      "movement",
+      "classification",
+      "undo",
+    ].includes(h.kind),
   );
   if (history.length)
     rows.push(
       ["", "HISTÓRICO DE CONFERÊNCIA"],
       ...history.map((h) => [
-        ({resolution:"Esclarecimento",manual_grouping:"Associação de documentos",movement:"Correção de movimentação",classification:"Classificação manual",undo:"Alteração desfeita"})[h.kind] || "Conferência",
+        {
+          resolution: "Esclarecimento",
+          manual_grouping: "Associação de documentos",
+          movement: "Correção de movimentação",
+          classification: "Classificação manual",
+          undo: "Alteração desfeita",
+        }[h.kind] || "Conferência",
         h.reason || h.id || h.documentIds?.join(","),
       ]),
     );
@@ -178,12 +211,25 @@ export function closingReport(closing, prefs) {
       movements: closing.movements,
       documents: closing.documents,
       history: closing.history,
+      transactions: closing.transactions,
+      normalizationNotes: closing.normalizationNotes,
     };
   const final = closing.confirmed && audit.status === "validated";
   return {
     fields: closing.fields,
     calc,
-    rows: [...reportRows(closing.fields, calc, prefs), ...(audit.issues.length ? [["", "PENDÊNCIAS DO FECHAMENTO"], ...audit.issues.map(i => [i.field ? allFieldLabel(i.field) : "Conferência", i.message])] : [])],
+    rows: [
+      ...reportRows(closing.fields, calc, prefs),
+      ...(audit.issues.length
+        ? [
+            ["", "PENDÊNCIAS DO FECHAMENTO"],
+            ...audit.issues.map((i) => [
+              i.field ? allFieldLabel(i.field) : "Conferência",
+              i.message,
+            ]),
+          ]
+        : []),
+    ],
     title: "RELATÓRIO DE FECHAMENTO DE CAIXA",
     market: closing.fields.market.value || prefs.market,
     final,
@@ -232,8 +278,19 @@ export function consolidatedReport(batch, prefs) {
       "Saldo líquido das diferenças",
       formatMoney(summary.netDifferenceCents),
     ]);
-  for (const [key,title] of [["byOperator","POR OPERADORA"],["byDate","POR DIA"],["byShift","POR TURNO"]])
-    if (summary[key]?.length) rows.push(["",title + " · SOMENTE CONFIRMADOS"],...summary[key].map(g => [g.label,`${g.count} fechamento(s) · vendas ${formatMoney(g.salesCents)} · diferença ${formatMoney(g.differenceCents)}`]));
+  for (const [key, title] of [
+    ["byOperator", "POR OPERADORA"],
+    ["byDate", "POR DIA"],
+    ["byShift", "POR TURNO"],
+  ])
+    if (summary[key]?.length)
+      rows.push(
+        ["", title + " · SOMENTE CONFIRMADOS"],
+        ...summary[key].map((g) => [
+          g.label,
+          `${g.count} fechamento(s) · vendas ${formatMoney(g.salesCents)} · diferença ${formatMoney(g.differenceCents)}`,
+        ]),
+      );
   rows.push(["", "RESULTADO INDIVIDUAL DE CADA CAIXA"]);
   for (const c of batch.closings) {
     const included = summary.includedClosingIds.includes(c.id),

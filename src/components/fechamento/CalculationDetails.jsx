@@ -26,7 +26,11 @@ export default function CalculationDetails() {
               ? 0
               : fields.refunds.value,
           ],
-          ...((rules.automatic ? rules.cancellationTreatment === "cash_out" : rules.deductCancellations)
+          ...((
+            rules.automatic
+              ? rules.cancellationTreatment === "cash_out"
+              : rules.deductCancellations
+          )
             ? [
                 [
                   "− Cancelamentos em dinheiro adicionais",
@@ -34,7 +38,11 @@ export default function CalculationDetails() {
                 ],
               ]
             : []),
-          ...((rules.automatic ? rules.reversalTreatment === "cash_out" : rules.deductReversals)
+          ...((
+            rules.automatic
+              ? rules.reversalTreatment === "cash_out"
+              : rules.deductReversals
+          )
             ? [["− Estornos em dinheiro adicionais", fields.reversals.value]]
             : []),
         ];
@@ -58,12 +66,13 @@ export default function CalculationDetails() {
         PIX, cartões e vale não entram no dinheiro físico. Totais declarados
         conferem a soma; não são somados novamente.
       </p>
-      {rules.cancellationTreatment === "included" && (rules.automatic || !rules.deductCancellations) && (
-        <p>
-          Os cancelamentos já estão descontados nas vendas líquidas e não são
-          subtraídos novamente.
-        </p>
-      )}
+      {rules.cancellationTreatment === "included" &&
+        (rules.automatic || !rules.deductCancellations) && (
+          <p>
+            Os cancelamentos já estão descontados nas vendas líquidas e não são
+            subtraídos novamente.
+          </p>
+        )}
       {fields.refunds.status === "derived" && <p>{fields.refunds.original}</p>}
       {rules.cashBasis === "net" && (
         <p>

@@ -1,6 +1,7 @@
 import { parseMoney } from "../../shared/money.js";
 import { movementTypes } from "../../shared/movements.js";
 import { normalize } from "./parserRules.js";
+import { financialAmountTokens } from "./financialObservations.js";
 export const movementPatterns = {
   withdrawal:
     /^(?:(?:sub)?total (?:de )?)?(?:sangrias?|retiradas?(?: de numerario)?|recolhimentos?|saida do caixa)\b/,
@@ -9,7 +10,7 @@ export const movementPatterns = {
   expense:
     /^(?:(?:sub)?total (?:de )?)?despesas? autorizadas?(?: em dinheiro)?\b/,
   opening:
-    /^(?:fundo(?: inicial| de troco)?|saldo inicial|troco inicial|abertura de caixa)\b/,
+    /^(?:fundo(?: inicial| de troco(?: inicial)?)?|saldo inicial|troco inicial|abertura de caixa)\b/,
   cash_sale:
     /^(?:venda|recebimento) (?:em dinheiro|em especie)\s+(?:n[ºo.]?\s*)?\d+\b/,
   refund:
@@ -69,18 +70,17 @@ export function extractMovements(lines, documentId) {
         section = null;
       continue;
     }
-    const [type] = entry,
+    const [type, pattern] = entry,
       spec = movementTypes[type];
     section = type;
     let amounts;
     try {
       amounts = moneyTokens(line.text);
       if (!amounts.length) {
-        const match = line.text.match(/[:=|]\s*(?:R\$\s*)?(-?\d+)\s*$/);
-        if (match)
-          amounts = [
-            { text: match[1], index: match.index, value: parseMoney(match[1]) },
-          ];
+        amounts = financialAmountTokens(line.text, {
+          labelPattern: pattern || /^(?:sub)?total\b/,
+          allowOperationId: true,
+        });
       }
     } catch {
       amounts = [];

@@ -8,7 +8,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useClosing } from "../../context/ClosingContext.jsx";
 import { analyzeFiles } from "../../services/closingApi.js";
 import FileList from "./FileList.jsx";
@@ -104,7 +104,9 @@ export default function Upload() {
             setProgress((old) =>
               files.map(
                 (item, i) =>
-                  data.documents.find((d) => d.hash === item.hash) || old[i],
+                  (data.sourceDocuments || data.documents).find(
+                    (d) => d.hash === item.hash,
+                  ) || old[i],
               ),
             ),
         },
@@ -121,6 +123,15 @@ export default function Upload() {
       const result = {
         ...data,
         documents,
+        sourceDocuments:
+          retry && lastResult
+            ? [
+                ...(lastResult.sourceDocuments || lastResult.documents).filter(
+                  (d) => !selectedFiles.some((f) => f.hash === d.hash),
+                ),
+                ...(data.sourceDocuments || data.documents),
+              ]
+            : data.sourceDocuments || data.documents,
         ...groupDocuments(documents, { autoGroup: prefs.autoGroup }),
       };
       setLastResult(result);
@@ -281,15 +292,9 @@ export default function Upload() {
           >
             Repetir somente arquivos com falha
           </button>
-          {lastResult.closings.length > 0 ? (
-            <button className="primary" onClick={() => openResult(lastResult)}>
-              Abrir resultados disponíveis
-            </button>
-          ) : (
-            <Link className="secondary" to="/suporte">
-              Ver quais documentos são aceitos
-            </Link>
-          )}
+          <button className="primary" onClick={() => openResult(lastResult)}>
+            Abrir resultados disponíveis
+          </button>
         </div>
       )}
       {busy && (

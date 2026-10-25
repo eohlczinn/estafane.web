@@ -1,0 +1,131 @@
+.analysis-evidence,
+.inventory-summary,
+.reading-summary {
+  margin: 20px 0;
+}
+.analysis-evidence h2,
+.inventory-summary h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.analysis-evidence p,
+.inventory-summary p,
+.reading-summary p {
+  line-height: 1.8;
+  margin: 10px 0;
+}
+.recognized-payments {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.recognized-payments > span {
+  border: 1px solid var(--line);
+  background: var(--input);
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.recognized-payments strong {
+  display: block;
+  font-size: 1.15rem;
+  color: var(--text);
+  margin-top: 8px;
+}
+.receipt-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--accent);
+}
+.evidence-note {
+  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  background: var(--soft);
+  border-radius: 0 10px 10px 0;
+  font-size: 0.9rem;
+}
+.analysis-evidence summary {
+  cursor: pointer;
+  padding: 14px 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+.transaction-list {
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 8px;
+}
+.transaction-list > div {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+}
+.transaction-list small {
+  grid-column: 1/-1;
+  color: var(--muted);
+}
+.transaction-list .duplicate-receipt {
+  border-style: dashed;
+  background: var(--soft);
+}
+.inventory-table-wrap {
+  overflow: auto;
+  max-width: 100%;
+  margin: 16px 0;
+}
+.inventory-summary table {
+  border-collapse: collapse;
+  min-width: 740px;
+  width: 100%;
+  font-size: 0.9rem;
+  text-align: left;
+}
+.inventory-summary th,
+.inventory-summary td {
+  border-bottom: 1px solid var(--line);
+  padding: 14px 12px;
+  vertical-align: top;
+}
+.inventory-summary thead {
+  background: var(--soft);
+}
+.inventory-summary tbody th {
+  min-width: 180px;
+}
+.inventory-summary th small {
+  display: block;
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 6px;
+}
+.document-context-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 360px;
+  overflow: auto;
+  font: inherit;
+  line-height: 1.7;
+  padding: 16px;
+  background: var(--soft);
+  border-radius: 12px;
+}
+@media (max-width: 600px) {
+  .transaction-list > div {
+    grid-template-columns: 1fr;
+  }
+  .recognized-payments {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

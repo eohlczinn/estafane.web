@@ -1,11 +1,24 @@
 import { emptyFields, allFields } from "../../shared/fields.js";
-import { parseMoney } from "../../shared/money.js";
-import { movementTotals, movementTypes, sumCents } from "../../shared/movements.js";
+import {
+  splitFinancialPairs,
+  financialAmountTokens,
+} from "./financialObservations.js";
+import {
+  extractPaymentTransactions,
+  reconcilePaymentTransactions,
+} from "./paymentTransactions.js";
+import { parseInventory, inventorySourceKey } from "./inventoryParser.js";
+import { sectionKind } from "./documentStructure.js";
+import {
+  movementTotals,
+  movementTypes,
+  sumCents,
+} from "../../shared/movements.js";
 import { normalize, moneyRules, infoRules, layoutLine } from "./parserRules.js";
 import { reconcileLedgerProfile } from "./ledgerProfile.js";
 import { interpretTables } from "./tableInterpreter.js";
-import { reconcilePaymentSection } from './paymentProfile.js';
-import {suggestCategories} from './categorySuggestions.js';
+import { reconcilePaymentSection } from "./paymentProfile.js";
+import { suggestCategories } from "./categorySuggestions.js";
 import { createHash } from "node:crypto";
 import { validateImportProfiles } from "../../shared/importProfiles.js";
 import {
@@ -18,7 +31,22 @@ export function parsePages(
   inputPages,
   { documentId = "document", importProfiles = [] } = {},
 ) {
-  const pages = interpretTables(inputPages);
+  const inventory = parseInventory(inputPages, { documentId });
+  const excludedInventory = new Set(
+    (inventory.excludedSources || []).map(inventorySourceKey),
+  );
+  const financialPages = inputPages.map((p) => {
+    const lines = (
+      p.lines || p.text.split(/\r?\n/).map((text, i) => ({ text, line: i + 1 }))
+    ).filter(
+      (l) =>
+        !excludedInventory.has(
+          inventorySourceKey({ ...l, page: p.page, sheet: p.sheet }),
+        ),
+    );
+    return { ...p, lines, text: lines.map((l) => l.text).join("\n") };
+  });
+  const pages = interpretTables(financialPages);
   const layoutKey = createHash("sha256")
     .update(
       JSON.stringify(
@@ -40,13 +68,14 @@ export function parsePages(
     warnings = [],
     declarations = [],
     unparsedLines = [],
-    extractionIssues = [], voucherParts = new Map();
+    extractionIssues = [],
+    voucherParts = new Map();
   const lines = pages.flatMap((p) =>
     (
       p.lines || p.text.split(/\r?\n/).map((text, i) => ({ text, line: i + 1 }))
     ).flatMap((l) => {
-      const cells = l.text.split(/\t+(?=\s*[A-Za-zÀ-ÿ][^\t]*[:=])/);
-      return cells.map((text, cell) => ({
+      const cells = splitFinancialPairs(l.text);
+      return cells.map(({ text }, cell) => ({
         ...l,
         text: text.trim(),
         page: p.page,
@@ -58,6 +87,7 @@ export function parsePages(
     }),
   );
   const extracted = extractMovements(lines, documentId);
+  const receipts = extractPaymentTransactions(lines, documentId);
   declarations.push(...extracted.declarations);
   function assign(key, value, source, original = source.text) {
     const candidate = {
@@ -93,19 +123,30 @@ export function parsePages(
   }
   const identity = { closingReference: null, reportType: null };
   const reportTitles = [
-    [/^(?:relacao de )?vendas (?:agrupadas )?por dia\b/,"Vendas por dia"],
-    [/^(?:extrato de movimentacao|relatorio de movimento|movimento diario|movimentacoes) (?:do |de )?caixa\b/,"Movimentação física de caixa"],
-    [/^fechamento (?:de |do )?operador/,"Fechamento de operador"],
-    [/^resumo (?:de |das )?vendas\b/,"Resumo de vendas"],
-    [/^extrato (?:de |dos )?pagamentos\b/,"Extrato de pagamentos"],
+    [/^(?:relacao de )?vendas (?:agrupadas )?por dia\b/, "Vendas por dia"],
+    [
+      /^(?:extrato de movimentacao|relatorio de movimento|movimento diario|movimentacoes) (?:do |de )?caixa\b/,
+      "Movimentação física de caixa",
+    ],
+    [/^fechamento (?:de |do )?operador/, "Fechamento de operador"],
+    [/^resumo (?:de |das )?vendas\b/, "Resumo de vendas"],
+    [/^extrato (?:de |dos )?pagamentos\b/, "Extrato de pagamentos"],
     [/^(?:relatorio (?:de |das )?)?sangrias$/, "Relatório de sangrias"],
     [/^(?:relatorio (?:de |dos )?)?suprimentos$/, "Relatório de suprimentos"],
     [/^relatorio (?:de |dos )?cancelamentos$/, "Relatório de cancelamentos"],
-    [/^relatorio (?:de |das )?(?:devolucoes|estornos)$/, "Devoluções e estornos"],
+    [
+      /^relatorio (?:de |das )?(?:devolucoes|estornos)$/,
+      "Devoluções e estornos",
+    ],
   ];
   for (const line of lines) {
-    const found = reportTitles.find(([pattern]) => pattern.test(normalize(line.text)));
-    if (found) { identity.reportType = found[1]; break; }
+    const found = reportTitles.find(([pattern]) =>
+      pattern.test(normalize(line.text)),
+    );
+    if (found) {
+      identity.reportType = found[1];
+      break;
+    }
   }
   const explicitMarket = lines.some((l) =>
     /^estabelecimento\s*[:=\s]/.test(normalize(l.text)),
@@ -114,12 +155,14 @@ export function parsePages(
     let original = line.text;
     // An unlabelled establishment banner keeps its complete name. A labelled
     // metadata card takes precedence over a decorative document banner.
-    if (/^(?:mercado|supermercado)\s+[^:=]+/i.test(original) && !/^(?:mercado|supermercado)\s*[:=]/i.test(original)) {
+    if (
+      /^(?:mercado|supermercado)\s+[^:=]+/i.test(original) &&
+      !/^(?:mercado|supermercado)\s*[:=]/i.test(original)
+    ) {
       if (explicitMarket) continue;
-      original = 'Estabelecimento: ' + original.split(/[|\t]/)[0].trim();
+      original = "Estabelecimento: " + original.split(/[|\t]/)[0].trim();
     }
-    const
-      clean = layoutLine(original),
+    const clean = layoutLine(original),
       n = normalize(clean);
     const source = {
       documentId,
@@ -150,21 +193,28 @@ export function parsePages(
         resolvable: true,
       });
     const reference = clean.match(
-      /^(?:ID do fechamento|Fechamento (?:ID|n[ºo.]|numero)|Identificador do fechamento)\s*[:=#]?\s*([\w-]+)/i,
+      /(?:\bDOCUMENTO\s*[:=#]\s*|^(?:ID do fechamento|Fechamento (?:ID|n[ºo.]|numero)|Identificador do fechamento)\s*[:=#]?\s*)([\w-]+)/i,
     );
     if (reference) {
       identity.closingReference = reference[1];
-      continue;
     }
     if (/^(?:relatorio|tipo do relatorio)\s*[:=]/.test(n)) {
       identity.reportType = clean.split(/[:=]/).slice(1).join(":").trim();
       continue;
     }
-    if (extracted.consumed.has(line.id) || line.metadataHeader || !clean) continue;
+    if (
+      extracted.consumed.has(line.id) ||
+      receipts.consumed.has(line.id) ||
+      line.section === "inventory" ||
+      line.metadataHeader ||
+      !clean ||
+      (sectionKind(clean) && !/^dinheiro contado\b/.test(n))
+    )
+      continue;
     // Metadata columns may be separated by coordinates/tabs without colons.
     const header = Object.values(infoRules).some((rule) => rule.test(n))
       ? clean.split(
-          /\s+(?=(?:Caixa|PDV|Data(?: do movimento| de fechamento)?|Turno|Hor[aá]rio|Operadora?|Estabelecimento|Documento)(?:\s*[:=]\s*|\s+)\S)/i,
+          /\s+(?=(?:Caixa|PDV|Data(?: do movimento| de fechamento)?|Turno|Hor[aá]rio|Operador(?:a|\(a\))?|Estabelecimento|Documento)(?:\s*[:=]\s*|\s+)\S)/i,
         )
       : [clean];
     let info = false;
@@ -215,7 +265,7 @@ export function parsePages(
           const time = cell.match(/\b(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?\b/);
           if (time) assign("shift", time[0], source);
         }
-        if (key !== 'date') value = value.replace(/[|\t]\s*$/, '').trim();
+        if (key !== "date") value = value.replace(/[|\t]\s*$/, "").trim();
         assign(key, value, source);
         info = true;
         break;
@@ -228,7 +278,7 @@ export function parsePages(
         !rule.test(n) ||
         (key === "cash" && /contado/.test(n)) ||
         (key === "cash" &&
-          /liquid|disponivel|restante|apos.*(?:sangri|retirad|movimenta)/.test(
+          /^(?:dinheiro|especie|numerario)\s+liquid|disponivel|restante|apos.*(?:sangri|retirad|movimenta)/.test(
             n,
           )) ||
         (key === "cards" && /debito|credito/.test(n))
@@ -239,20 +289,24 @@ export function parsePages(
         amounts = moneyTokens(clean);
       } catch {}
       if (!amounts.length) {
-        const tail = clean
-          .slice(n.match(rule)[0].length)
-          .trim()
-          .replace(/^[:=|]\s*/, "");
-        if (/^(?:R\$\s*)?-?\d+$/.test(tail))
-          amounts = [{ value: parseMoney(tail) }];
+        amounts = financialAmountTokens(clean, { labelPattern: rule });
       }
       if (amounts.length === 1) {
-        const subtype = key === "voucher" && !/alimentacao.*refeicao|refeicao.*alimentacao/.test(n)
-          ? /vale[- ]?alimentacao|ticket alimentacao/.test(n) ? "alimentacao" : /vale[- ]?refeicao/.test(n) ? "refeicao" : null : null;
+        const subtype =
+          key === "voucher" &&
+          !/alimentacao.*refeicao|refeicao.*alimentacao/.test(n)
+            ? /vale[- ]?alimentacao|ticket alimentacao/.test(n)
+              ? "alimentacao"
+              : /vale[- ]?refeicao/.test(n)
+                ? "refeicao"
+                : null
+            : null;
         if (subtype) {
           const items = voucherParts.get(subtype) || [];
-          items.push({value:amounts[0].value,source,original});voucherParts.set(subtype,items);
-          recognized = true; break;
+          items.push({ value: amounts[0].value, source, original });
+          voucherParts.set(subtype, items);
+          recognized = true;
+          break;
         }
         assign(key, amounts[0].value, source);
         declarations.push({
@@ -270,8 +324,16 @@ export function parsePages(
       /^(?:pagina\s+\d|pag\.?\s*\d|emitido (?:em|por)|impress[ao]o (?:em|por)|cnpj\s*[:=]|cpf\s*[:=]|telefone\s*[:=]|versao do sistema\s*[:=])/.test(
         n,
       ) || /^[-_=*\s]+$/.test(clean);
-    const financialContext = /\b(?:dinheiro|numerario|sangria|suprimento|pix|cartao|despesa|devolucao|estorno|cancelamento)\b/.test(n);
-    if (!recognized && (!informational || financialContext) && /(?:R\$|\d,\d{2}\b)/.test(clean)) {
+    const financialContext =
+      /\b(?:dinheiro|numerario|sangria|suprimento|pix|cartao|despesa|devolucao|estorno|cancelamento)\b/.test(
+        n,
+      );
+    if (
+      !recognized &&
+      (!informational || financialContext) &&
+      (/(?:R\$|\d,\d{2}\b)/.test(clean) ||
+        (financialContext && /\d/.test(clean)))
+    ) {
       const tokens = moneyTokens(clean);
       const label = normalize(
         clean
@@ -316,13 +378,33 @@ export function parsePages(
   }
   if (voucherParts.size) {
     const parts = [...voucherParts.values()];
-    if (parts.some(items => new Set(items.map(i => i.value)).size > 1)) {
-      for (const item of parts.flat()) assign("voucher",item.value,item.source,item.original);
+    if (parts.some((items) => new Set(items.map((i) => i.value)).size > 1)) {
+      for (const item of parts.flat())
+        assign("voucher", item.value, item.source, item.original);
     } else {
-      const items = parts.map(p => p[0]), total = sumCents(items.map(i => i.value));
-      assign("voucher",total,{...items[0].source,profile:items.length > 1 ? "vales-por-modalidade" : items[0].source.profile},items.map(i => i.original).join(" | "));
-      fields.voucher.breakdown = [...voucherParts].map(([kind,items]) => ({kind,value:items[0].value,sources:items.map(i => i.source)}));
-      declarations.push({field:"voucher",value:total,source:items[0].source,role:"declared_total"});
+      const items = parts.map((p) => p[0]),
+        total = sumCents(items.map((i) => i.value));
+      assign(
+        "voucher",
+        total,
+        {
+          ...items[0].source,
+          profile:
+            items.length > 1 ? "vales-por-modalidade" : items[0].source.profile,
+        },
+        items.map((i) => i.original).join(" | "),
+      );
+      fields.voucher.breakdown = [...voucherParts].map(([kind, items]) => ({
+        kind,
+        value: items[0].value,
+        sources: items.map((i) => i.source),
+      }));
+      declarations.push({
+        field: "voucher",
+        value: total,
+        source: items[0].source,
+        role: "declared_total",
+      });
     }
   }
   const totals = movementTotals(extracted.movements);
@@ -371,6 +453,13 @@ export function parsePages(
       normalize(pages.map((p) => p.text).join("\n")),
     ),
   };
+  reconcilePaymentTransactions({
+    result: receipts,
+    fields,
+    assign,
+    extractionIssues,
+    documentId,
+  });
   reconcileLedgerProfile({
     lines,
     fields,
@@ -381,7 +470,13 @@ export function parsePages(
     assign,
     documentId,
   });
-  reconcilePaymentSection({lines,fields,assign,extractionIssues,documentId});
+  reconcilePaymentSection({
+    lines,
+    fields,
+    assign,
+    extractionIssues,
+    documentId,
+  });
   // Profile-recognized lines no longer need a generic extraction warning.
   const unknownSources = new Set(
     unparsedLines.map((l) => `${l.source.page}:${l.source.line}`),
@@ -420,10 +515,20 @@ export function parsePages(
     const reason = issue.message.replace(/[A-Z]+\d+:\s*/g, "");
     const key = `${issue.source.page}:${reason}`;
     const previous = groupedIssues.get(key);
-    if (previous) { previous.sources.push(issue.source); previous.count++; }
-    else groupedIssues.set(key,{...issue,sources:[issue.source],count:1});
+    if (previous) {
+      previous.sources.push(issue.source);
+      previous.count++;
+    } else
+      groupedIssues.set(key, { ...issue, sources: [issue.source], count: 1 });
   }
-  const reviewIssues = [...groupedIssues.values()].map(i => i.count > 1 ? {...i,message:`${i.count} ocorrências nesta aba/página: ${i.message}`} : i);
+  const reviewIssues = [...groupedIssues.values()].map((i) =>
+    i.count > 1
+      ? {
+          ...i,
+          message: `${i.count} ocorrências nesta aba/página: ${i.message}`,
+        }
+      : i,
+  );
   return {
     fields,
     movements: extracted.movements,
@@ -432,7 +537,14 @@ export function parsePages(
     warnings: uniqueWarnings,
     extractionIssues: reviewIssues,
     layoutKey,
-    normalizationNotes: extracted.issues,
+    normalizationNotes: [...extracted.issues, ...receipts.notes],
+    transactions: receipts.transactions,
+    inventory,
+    documentKind:
+      inventory.detected &&
+      !Object.keys(moneyRules).some((k) => fields[k]?.value != null)
+        ? "inventory"
+        : "financial",
     rules,
     identity,
   };

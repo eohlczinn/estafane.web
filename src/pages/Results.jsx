@@ -9,6 +9,7 @@ import { statusLabels } from "../services/report.js";
 import Review from "../components/fechamento/Review.jsx";
 import DocumentSource from "../components/fechamento/DocumentSource.jsx";
 import SimpleResult from "../components/fechamento/SimpleResult.jsx";
+import AnalysisEvidence from '../components/fechamento/AnalysisEvidence.jsx';
 import { useWorkspace } from "../context/workspace.js";
 export default function Results() {
   const { saveClosing, saving } = useWorkspace();
@@ -61,6 +62,7 @@ export default function Results() {
         </div>
       </div>
       <SimpleResult />
+      <AnalysisEvidence />
       {batch && (
         <Link className="secondary back-batch" to="/lote">
           Voltar aos fechamentos do lote

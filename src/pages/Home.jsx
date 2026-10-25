@@ -23,7 +23,6 @@ import Review from "../components/fechamento/Review.jsx";
 import DocumentSource from "../components/fechamento/DocumentSource.jsx";
 import Encouragement from "../components/profile/Encouragement.jsx";
 import Recommendations from "../components/profile/Recommendations.jsx";
-import DepthCard from "../components/profile/DepthCard.jsx";
 export default function Home({ reader = false }) {
   const { fields, rules, filename, pages, prefs } = useClosing(),
     calc = calculate(fields, rules);
@@ -97,7 +96,7 @@ export default function Home({ reader = false }) {
           ],
           [WalletCards, "Cartões", calc.cardTotal, "pink", "Débito + crédito"],
         ].map(([Icon, label, value, color, sub]) => (
-          <DepthCard className="stat-card" key={label}>
+          <section className="stat-card" key={label}>
             <span className={`tile ${color}`}>
               <Icon size={26} />
             </span>
@@ -106,7 +105,7 @@ export default function Home({ reader = false }) {
               <strong>{value == null ? "—" : formatMoney(value)}</strong>
             </div>
             <small>{value == null ? "Aguardando leitura" : sub}</small>
-          </DepthCard>
+          </section>
         ))}
       </div>
       <div className="dashboard-grid">

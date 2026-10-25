@@ -69,8 +69,19 @@ export function detectDelimiter(text) {
         const widths = rows.map((r) => r.length),
           common = widths.filter((n) => n > 1);
         // A decimal comma inside a plain-text amount is not a CSV column.
-        if (delimiter === "," && rows.some(r => r.length > 1) && rows.filter(r => r.length > 1).every(r => r.length === 2 && /\d$/.test(r[0]) && /^\d{2}(?:\D.*)?$/.test(r[1])))
-          return { delimiter, score:0 };
+        if (
+          delimiter === "," &&
+          rows.some((r) => r.length > 1) &&
+          rows
+            .filter((r) => r.length > 1)
+            .every(
+              (r) =>
+                r.length === 2 &&
+                /\d$/.test(r[0]) &&
+                /^\d{2}(?:\D.*)?$/.test(r[1]),
+            )
+        )
+          return { delimiter, score: 0 };
         const counts = new Map();
         common.forEach((n) => counts.set(n, (counts.get(n) || 0) + 1));
         const frequency = Math.max(0, ...counts.values());

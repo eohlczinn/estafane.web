@@ -6,6 +6,7 @@ import "./styles/app.css";
 import "./styles/personal.css";
 import './styles/experience.css';
 import './styles/workspace.css';
+import './styles/analysis.css';
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <App />

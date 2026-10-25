@@ -1,6 +1,6 @@
 {
   "name": "estefane-web",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,6 +11,7 @@
     "test:integration": "node tests/integration.js && node tests/singleMovementIntegration.js && node tests/batchIntegration.js && node tests/documentIntegration.js && node tests/batchReports.js",
     "test:dev": "node tests/devSmoke.js",
     "test:horizonte": "node tests/horizonteIntegration.js",
+    "test:mega": "node tests/megaIntegration.js",
     "hash-password": "node server/scripts/hashPassword.js"
   },
   "dependencies": {

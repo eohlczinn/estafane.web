@@ -23,19 +23,28 @@ export function summarizeBatch(closings, documents = []) {
     closings.length > 0 &&
     included.length === closings.length &&
     !failed.length;
-  const breakdown = field => {
+  const breakdown = (field) => {
     const groups = new Map();
     for (const c of included) {
       const label = c.fields[field]?.value || "Não informado";
-      if (!groups.has(label)) groups.set(label,[]);
+      if (!groups.has(label)) groups.set(label, []);
       groups.get(label).push(c);
     }
-    return [...groups].map(([label,items]) => ({label,count:items.length,
-      salesCents:items.every(c => c.audit.calculation.sales != null) ? sumCents(items.map(c => c.audit.calculation.sales)) : null,
-      differenceCents:sumCents(items.map(c => c.audit.calculation.difference))}));
+    return [...groups].map(([label, items]) => ({
+      label,
+      count: items.length,
+      salesCents: items.every((c) => c.audit.calculation.sales != null)
+        ? sumCents(items.map((c) => c.audit.calculation.sales))
+        : null,
+      differenceCents: sumCents(
+        items.map((c) => c.audit.calculation.difference),
+      ),
+    }));
   };
   return {
-    byOperator:breakdown("operator"), byDate:breakdown("date"), byShift:breakdown("shift"),
+    byOperator: breakdown("operator"),
+    byDate: breakdown("date"),
+    byShift: breakdown("shift"),
     closingCount: closings.length,
     validatedCount: included.length,
     pendingCount: excluded.length,
@@ -69,7 +78,7 @@ export function summarizeBatch(closings, documents = []) {
       ...new Set([
         ...excluded.flatMap((c) => c.documentIds),
         ...failed.map((d) => d.id),
-        ...documents.filter(d=>d.status==='duplicate').map(d=>d.id),
+        ...documents.filter((d) => d.status === "duplicate").map((d) => d.id),
       ]),
     ],
   };

@@ -1,3 +1,4 @@
+import { moneyFields } from "../../shared/fields.js";
 const normalized = (value) =>
   String(value || "")
     .normalize("NFD")
@@ -27,13 +28,20 @@ export function assessDocument(pages, parsed = {}) {
     "vale-alimentacao",
   ].filter((k) => text.includes(k));
   const recognized = Object.entries(parsed.fields || {})
-    .filter(
-      ([k, f]) =>
-        !["market", "operator", "register", "date"].includes(k) &&
-        f.value != null &&
-        f.source,
-    )
+    .filter(([k, f]) => k in moneyFields && f.value != null && f.source)
     .map(([k]) => k);
+  if (
+    parsed.inventory?.detected &&
+    !recognized.length &&
+    !parsed.movements?.length
+  )
+    return {
+      status: "inventory_report",
+      signals: ["Estoque e quantidades identificados"],
+      message: parsed.inventory.items.length
+        ? "Inventário identificado. Quantidades serão conferidas separadamente do dinheiro."
+        : "Seção de estoque identificada. Confira a estrutura e os campos pendentes.",
+    };
   const receipt =
     /\b(?:nota fiscal|danfe|nf-e|nfc-e|cupom fiscal|pedido de compra|orcamento|fatura|boleto|curriculo|experiencia profissional|receita culinaria|manual de instrucoes)\b/.test(
       text,

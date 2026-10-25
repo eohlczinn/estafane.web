@@ -22,6 +22,9 @@ const snapshotKeys = [
   "confirmed",
   "reviewed",
   "profileCorrections",
+  "transactions",
+  "normalizationNotes",
+  "inventory",
 ];
 export function archiveSnapshot(closing) {
   const value = Object.fromEntries(

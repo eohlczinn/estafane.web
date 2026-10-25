@@ -9,6 +9,16 @@ import { groupDocuments } from "./groupingService.js";
 import { summarizeBatch } from "../../shared/batch.js";
 import { contractVersion, validateDocument } from "../../shared/contracts.js";
 import { detectDocument } from "./documentDetector.js";
+import { scopePartLabel } from "./documentScopes.js";
+const completedStatus = (result) =>
+  result.documentKind === "inventory"
+    ? result.inventory?.issues?.length ||
+      result.inventory?.items?.some((item) => item.issues?.length)
+      ? "review_required"
+      : "completed"
+    : result.audit?.canConfirm
+      ? "completed"
+      : "review_required";
 export const executionQueue = new ExecutionQueue(
   limits.concurrency,
   limits.maxBatches * limits.maxFiles + 5,
@@ -48,11 +58,21 @@ export function getBatch(id, owner) {
   return job && (!job.owner || job.owner === owner) ? job : undefined;
 }
 export function batchSnapshot(job) {
-  const documents = job.documents.flatMap(doc => doc.parts?.length ? doc.parts.map(part => ({
-    ...doc,...part,parts:undefined,partOf:doc.id,hash:doc.hash,
-    filename:`${doc.filename} · aba ${part.pages[0].sheet}`,
-    status:part.audit.canConfirm ? "completed" : "review_required",
-  })) : [doc]);
+  const documents = job.documents.flatMap((doc) =>
+    doc.parts?.length
+      ? doc.parts.map((part) => ({
+          ...doc,
+          ...part,
+          parts: undefined,
+          contextPages: undefined,
+          container: false,
+          partOf: doc.id,
+          hash: doc.hash,
+          filename: `${doc.filename} · ${part.partLabel || scopePartLabel(part.pages)}`,
+          status: completedStatus(part),
+        }))
+      : [doc],
+  );
   const grouped = groupDocuments(documents, { autoGroup: job.autoGroup });
   return {
     version: contractVersion,
@@ -66,6 +86,41 @@ export function batchSnapshot(job) {
           : "review_required"
       : "processing",
     documents,
+    sourceDocuments: job.documents.map(
+      ({
+        id,
+        filename,
+        hash,
+        status,
+        format,
+        documentKind,
+        container,
+        inventory,
+        contextPages,
+        error,
+        failureKind,
+        parts,
+        size,
+        page,
+        pageCount,
+      }) => ({
+        id,
+        filename,
+        hash,
+        status,
+        format,
+        documentKind,
+        container,
+        inventory,
+        contextPages,
+        error,
+        failureKind,
+        size,
+        page,
+        pageCount,
+        partCount: parts?.length || 0,
+      }),
+    ),
     closings: grouped.closings,
     suggestions: grouped.suggestions,
     summary: summarizeBatch(grouped.closings, documents),
@@ -110,7 +165,7 @@ export async function startBatch(
         format: file.detectedFormat,
         status: error ? "error" : duplicateOf ? "duplicate" : "waiting",
         error: error || undefined,
-        failureKind:error ? file.failureKind || "limit" : undefined,
+        failureKind: error ? file.failureKind || "limit" : undefined,
         duplicateOf,
         message: duplicateOf ? "Este documento já foi adicionado." : undefined,
       });
@@ -142,14 +197,16 @@ export async function startBatch(
             );
             const { type, ok, ...result } = data;
             Object.assign(doc, result, {
-              status: result.audit?.canConfirm
-                ? "completed"
-                : "review_required",
+              status: completedStatus(result),
             });
             validateDocument(doc);
           } catch (error) {
             doc.status = error.name === "AbortError" ? "cancelled" : "error";
-            doc.failureKind = error.failureKind || (error.name === "PasswordException" ? "unsupported" : "technical");
+            doc.failureKind =
+              error.failureKind ||
+              (error.name === "PasswordException"
+                ? "unsupported"
+                : "technical");
             doc.error =
               error.name === "PasswordException"
                 ? "PDF protegido por senha. Exporte uma cópia sem senha."

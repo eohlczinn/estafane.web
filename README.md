@@ -126,6 +126,8 @@ As imagens de A4/80/58 são locais em `public/illustrations/`, geradas durante o
 
 ## Organização
 
+A versão 1.4 adiciona conciliação de cupons, leitura contextual de inteiros, estoque em unidades e separação de turnos dentro do mesmo PDF ou planilha. Veja [responsabilidades e casos de teste](EVOLUCAO-1.4.md). `npm run test:mega` verifica o PDF fictício de 19 páginas pelas duas rotas HTTP, além de estoque isolado e planilha mista.
+
 - `shared/calculation.js`, `movements.js`, `reconciliation.js`: motor único de cálculo, normalização e auditoria para servidor e navegador.
 - `shared/grouping.js`, `batch.js`, `closingEdits.js`, `contracts.js`: associação, consolidado, histórico/revalidação e contrato versionado.
 - `server/services/authService.js`, `originValidator.js`: autenticação por sessão HttpOnly, hash scrypt, rate limiting e validação de origem.

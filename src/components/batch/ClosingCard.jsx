@@ -19,6 +19,11 @@ export default function ClosingCard({ closing, onOpen, selected, onSelect }) {
             {closing.fields.date.value || "Data pendente"} ·{" "}
             {closing.fields.shift.value || "Período não informado"}
           </p>
+          {closing.documents[0]?.identity?.closingReference && (
+            <small>
+              Referência: {closing.documents[0].identity.closingReference}
+            </small>
+          )}
         </div>
         <label className="checkbox">
           <input
@@ -48,14 +53,24 @@ export default function ClosingCard({ closing, onOpen, selected, onSelect }) {
         ))}
       </div>
       <span className={"result-chip " + (confirmed ? c.result : "pending")}>
-        {confirmed ? statusLabels[c.result] : "PENDENTE DE CONFERÊNCIA"}
+        {confirmed
+          ? statusLabels[c.result]
+          : closing.audit.canConfirm
+            ? `${c.result === "balanced" ? "SEM DIFERENÇA" : statusLabels[c.result]} · CONFERIR`
+            : closing.fields.counted.value == null && c.expected != null
+              ? "FALTA INFORMAR CONTAGEM"
+              : "REVISÃO NECESSÁRIA"}
       </span>
       <small>
         {closing.documentIds.length} documento(s) ·{" "}
         {closing.audit.issues.length} pendência(s)
       </small>
       <button className="secondary" onClick={onOpen}>
-        {confirmed ? "Ver detalhes / imprimir" : "Ver pendências e conferir"}
+        {confirmed
+          ? "Ver detalhes / imprimir"
+          : closing.audit.canConfirm
+            ? "Conferir caixa"
+            : "Ver pendências e conferir"}
       </button>
     </section>
   );

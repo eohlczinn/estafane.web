@@ -188,6 +188,14 @@ export function mergeDocuments(documents, id) {
       d.pages.map((p) => ({ ...p, documentId: d.id, filename: d.filename })),
     ),
     warnings: documents.flatMap((d) => d.warnings || []),
+    transactions: documents.flatMap((d) => d.transactions || []),
+    normalizationNotes: documents.flatMap((d) => d.normalizationNotes || []),
+    inventory: {
+      version: 1,
+      detected: documents.some((d) => d.inventory?.detected),
+      items: documents.flatMap((d) => d.inventory?.items || []),
+      issues: documents.flatMap((d) => d.inventory?.issues || []),
+    },
     resolutions: {},
     history: [],
     notes: "",
@@ -206,7 +214,11 @@ export function groupDocuments(
   const groups = [],
     suggestions = [];
   const ready = documents.filter(
-    (d) => d.fields && !["error", "cancelled", "duplicate"].includes(d.status),
+    (d) =>
+      d.fields &&
+      !d.container &&
+      d.documentKind !== "inventory" &&
+      !["error", "cancelled", "duplicate"].includes(d.status),
   );
   for (const doc of ready) {
     const match = groups.find(
